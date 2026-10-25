@@ -5,7 +5,35 @@ Ce document fait foi pour les deux projets. Unicorn-TV l'écrit par son menu
 Unicorn-Radio le lit, et saura l'écrire. Établi le 2026-10-25 depuis
 l'export d'Unicorn-TV tel qu'il est, chantier 218 là-bas.
 
-## Un fichier JSON, un objet
+## L'enveloppe : le fichier de configuration d'Unicorn-TV
+
+Ce qu'une personne a sous la main, c'est le fichier que produit
+Réglages → « Emporter sur une autre machine » d'Unicorn-TV, nommé
+`unicorn-config-AAAA-MM-JJ.json`. La radio y est **une section parmi
+d'autres** :
+
+```json
+{
+  "application": "unicorn-tv",
+  "version": 2,
+  "exportedAt": "2026-10-25T18:00:00.000Z",
+  "local": { … },
+  "server": { … },
+  "bibliotheque": { … },
+  "radio": { … la section décrite ci-dessous … }
+}
+```
+
+Unicorn-Radio **ne lit que `radio`** et ignore tout le reste : `local` et
+`server` portent les réglages et les clefs de l'installation, qui ne
+regardent pas le téléphone, et `bibliotheque` les chaînes de télévision.
+Il accepte aussi un fichier réduit à la section seule, un objet qui a
+`favoris` et `dossiers` à sa racine. Quand il écrit, il écrit la section
+seule, avec `"application": "unicorn-radio"` et `"exportedAt"` à côté
+d'elle pour qu'on sache d'où vient le fichier ; l'import d'Unicorn-TV
+passe par la même enveloppe, qui ne lit que `radio`.
+
+## La section `radio`
 
 ```json
 {
@@ -19,21 +47,22 @@ l'export d'Unicorn-TV tel qu'il est, chantier 218 là-bas.
     },
     …
   ],
-  "podcasts": …
+  "podcasts": [ { "flux": "https://…/rss", "nom": "…", "auteur": "…", "image": "https://…", "ordre": 0 }, … ]
 }
 ```
 
-- `format` : le numéro de ce format. **Absent dans les fichiers d'Unicorn-TV
-  écrits avant que ce document existe : absent vaut 1.** Un lecteur refuse
-  un numéro qu'il ne connaît pas, en le disant.
+- `format` : le numéro de ce format, écrit par Unicorn-TV depuis le
+  2026-10-25 au soir. **Absent dans les fichiers écrits avant : absent
+  vaut 1.** Un lecteur refuse un numéro qu'il ne connaît pas, en le disant.
 - `favoris` : les stations favorites, dans l'ordre.
 - `dossiers` : un par dossier, **son chemin complet** du premier niveau à
   lui-même, tableau de noms. Un dossier vide a `stations: []`. L'ordre des
   dossiers frères est `ordre` ; les parents n'ont pas à précéder leurs
   enfants dans le tableau, le lecteur les trie du chemin le plus court au
   plus long.
-- `podcasts` : les abonnements aux podcasts, réservé ; Unicorn-Radio ne le
-  lit pas pour l'instant et le recopie tel quel s'il écrit le fichier.
+- `podcasts` : les abonnements aux podcasts, un par ligne avec l'adresse du
+  flux RSS, le nom, l'auteur, l'image et l'ordre. Unicorn-Radio ne le lit
+  pas pour l'instant et le recopie tel quel s'il écrit le fichier.
 
 Une station peut figurer dans plusieurs dossiers, et dans les favoris en
 plus : c'est le même `station_uuid` à chaque fois.
@@ -72,7 +101,8 @@ passée. Unicorn-Radio fait de même.
 
 ## Exemple
 
-Noms et adresses inventés.
+Noms et adresses inventés. La section seule ; dans le fichier de
+configuration, le même objet est sous la clef `radio`.
 
 ```json
 {
@@ -109,6 +139,8 @@ Noms et adresses inventés.
 }
 ```
 
-## À faire côté Unicorn-TV
+## Côté Unicorn-TV
 
-Écrire `"format": 1` dans l'export. Rien d'autre ne change.
+`"format": 1` est écrit dans la section depuis le 2026-10-25 au soir
+(`server/routes/radio.js`, route `GET /api/radio/export`). Rien d'autre
+n'a changé.

@@ -15,3 +15,5 @@ Sur le modèle d'Unicorn-TV : un dossier par usage, un fichier par chantier.
 - `notes-de-version/X.Y.Z.txt` : la note de chaque version, FR puis EN,
   écrite pour qui utilise l'application.
 - `prompts/publier.md` : la procédure de publication, pas à pas.
+- `prompts/demarrer.md` : le prompt qui a ouvert la première session de
+  travail, à relire pour en ouvrir une autre.
