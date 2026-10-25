@@ -1,0 +1,32 @@
+# Gradle et Android Studio
+.gradle/
+build/
+/local.properties
+.idea/
+*.iml
+.kotlin/
+captures/
+.externalNativeBuild/
+.cxx/
+.DS_Store
+
+# La clef de signature et ce qui la decrit ne sont JAMAIS dans le depot.
+# Elle vit hors du dossier (voir docs/prompts/publier.md) ; ces motifs sont
+# un filet si une copie s egarait ici.
+*.jks
+*.keystore
+signature.properties
+
+# Les APK construits se refont depuis le depot ; ceux qui comptent sont
+# joints a la release GitHub.
+pkg/
+
+# Claude Code : tout reste local. Les regles du projet briefent une session
+# sur CETTE machine ; un depot public n en a pas l usage, et leur somme
+# decrirait l installation de son proprietaire.
+.claude/
+CLAUDE.md
+
+# Ce qui s echange pendant un diagnostic : journaux, captures, extraits de
+# flux. Un journal peut porter des identifiants.
+debug/
