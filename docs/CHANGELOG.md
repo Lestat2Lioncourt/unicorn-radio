@@ -3,6 +3,15 @@
 Une entrée par chantier, la plus récente en tête. Le détail de chacun est
 dans `correctifs/`.
 
+## 2026-10-26 — 005 · Apparier et tirer
+
+Le premier chantier de la synchronisation : l'écran Serveur apparie le
+téléphone à son Unicorn-TV, par le QR code ou l'adresse et le code tapés,
+et tire sa liste, qui prend la place des fichiers ; mise à jour à chaque
+retour au premier plan, « Se détacher », et le retour aux fichiers quand
+le serveur révoque. Les gestes du téléphone vers le serveur viennent
+ensuite.
+
 ## 2026-10-26 — 004 · Les deux langues
 
 Comme sur le bureau : deux drapeaux en haut à droite, français et anglais,

@@ -50,6 +50,9 @@ import org.unicornradio.app.lecture.ServiceLecture
 import org.unicornradio.app.lecture.versElement
 import org.unicornradio.app.modele.Noeud
 import org.unicornradio.app.modele.Station
+import org.unicornradio.app.serveur.ClientServeur
+import org.unicornradio.app.serveur.MesRadios
+import org.unicornradio.app.serveur.Serveur
 import java.util.Locale
 
 /**
@@ -63,9 +66,13 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var fichiers: Fichiers
     private lateinit var mesFavoris: MesFavoris
+    private lateinit var serveur: Serveur
+    private lateinit var mesRadios: MesRadios
     private lateinit var barre: MaterialToolbar
     private lateinit var liste: RecyclerView
     private lateinit var vide: View
+    private lateinit var videTexte: TextView
+    private lateinit var videBouton: View
     private lateinit var lecture: View
     private lateinit var lectureLogo: ImageView
     private lateinit var lectureInitiales: TextView
@@ -92,6 +99,12 @@ class MainActivity : AppCompatActivity() {
     private val minuterie = Handler(Looper.getMainLooper())
     private val lancer = Runnable { chercher() }
 
+    // Le serveur apparié : un tirage à la fois, et la barre dit s'il ne répond pas, après deux tirages manqués de suite.
+    private var tirageEnCours = false
+    private var tiragesManques = 0
+    private val serveurInjoignable: Boolean
+        get() = tiragesManques >= 2
+
     private var controleurFutur: ListenableFuture<MediaController>? = null
     private var controleur: MediaController? = null
 
@@ -107,6 +120,13 @@ class MainActivity : AppCompatActivity() {
 
     private val demanderNotification = registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
 
+    /** Au retour de l'écran Serveur, quoi qu'il s'y soit passé : relire, et `onStart` tire. */
+    private val ouvrirServeur = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+        tiragesManques = 0
+        pile.clear()
+        charger()
+    }
+
     private val surLecteur = object : Player.Listener {
         override fun onEvents(player: Player, events: Player.Events) = rafraichirLecture()
     }
@@ -116,10 +136,14 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
         fichiers = Fichiers(this)
         mesFavoris = MesFavoris(this)
+        serveur = Serveur(this)
+        mesRadios = MesRadios(this)
 
         barre = findViewById(R.id.barre)
         liste = findViewById(R.id.liste)
         vide = findViewById(R.id.vide)
+        videTexte = findViewById(R.id.videTexte)
+        videBouton = findViewById(R.id.videBouton)
         lecture = findViewById(R.id.lecture)
         lectureLogo = findViewById(R.id.lectureLogo)
         lectureInitiales = findViewById(R.id.lectureInitiales)
@@ -148,13 +172,15 @@ class MainActivity : AppCompatActivity() {
             when (it.itemId) {
                 R.id.ouvrir -> { ouvrirUnFichier(); true }
                 R.id.chercher -> { entrerDansLaRecherche(); true }
+                R.id.serveur -> { ouvrirServeur.launch(Intent(this, ServeurActivity::class.java)); true }
                 else -> false
             }
         }
         barre.setNavigationOnClickListener { retour.handleOnBackPressed() }
         poserLesDrapeaux()
-        findViewById<View>(R.id.videBouton).setOnClickListener { ouvrirUnFichier() }
+        videBouton.setOnClickListener { ouvrirUnFichier() }
         findViewById<View>(R.id.videChercher).setOnClickListener { entrerDansLaRecherche() }
+        findViewById<View>(R.id.videServeur).setOnClickListener { ouvrirServeur.launch(Intent(this, ServeurActivity::class.java)) }
         lectureBouton.setOnClickListener { basculerLecture() }
         onBackPressedDispatcher.addCallback(this, retour)
 
@@ -209,6 +235,7 @@ class MainActivity : AppCompatActivity() {
                 rafraichirLecture()
             }, MoreExecutors.directExecutor())
         }
+        tirer()
     }
 
     override fun onStop() {
@@ -244,6 +271,46 @@ class MainActivity : AppCompatActivity() {
         AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(langue))
     }
 
+    // ---- Le serveur ----
+
+    /**
+     * Apparié, tirer la copie du serveur : à chaque retour au premier plan,
+     * donc aussi au retour de l'écran Serveur. Injoignable, la copie reste et
+     * la barre le dit ; révoqué, on repasse en mode fichiers et on le dit.
+     */
+    private fun tirer() {
+        val jeton = serveur.jeton ?: return
+        if (tirageEnCours) return
+        tirageEnCours = true
+        lifecycleScope.launch {
+            try {
+                withContext(Dispatchers.IO) {
+                    val (adresse, _) = ClientServeur.trouver(serveur.adresses, serveur.id, serveur.adresseActive)
+                    mesRadios.remplacer(ClientServeur.export(adresse, jeton))
+                    serveur.noterLaCopie(adresse)
+                }
+                tiragesManques = 0
+                charger()
+            } catch (e: ClientServeur.Revoque) {
+                val nom = serveur.nom
+                withContext(Dispatchers.IO) { serveur.oublier(); mesRadios.effacer() }
+                tiragesManques = 0
+                MaterialAlertDialogBuilder(this@MainActivity)
+                    .setMessage(getString(R.string.revoque, nom))
+                    .setPositiveButton(android.R.string.ok, null)
+                    .show()
+                pile.clear()
+                charger()
+            } catch (e: Exception) {
+                Log.w(Fichiers.JOURNAL, "serveur : tirage : ${e.message}")
+                tiragesManques++
+                if (!modeRecherche) afficher()
+            } finally {
+                tirageEnCours = false
+            }
+        }
+    }
+
     // ---- Les fichiers ----
 
     /**
@@ -256,11 +323,23 @@ class MainActivity : AppCompatActivity() {
         val chemin = pile.map { it.titre }
         lifecycleScope.launch {
             val racines = withContext(Dispatchers.IO) {
-                val favoris = mesFavoris.charger()
-                val liste = ArrayList<Noeud>()
-                if (favoris.isNotEmpty()) liste += Noeud(getString(R.string.mes_favoris), emptyList(), favoris, mesFavoris = true)
-                liste += fichiers.charger()
-                liste
+                if (serveur.apparie) {
+                    // Apparié : la copie du serveur tient lieu de tout, ses favoris en tête, puis ses dossiers.
+                    val copie = mesRadios.charger()
+                    if (copie == null) emptyList() else listOf(
+                        Noeud(
+                            getString(R.string.app_name),
+                            listOf(Noeud(getString(R.string.mes_favoris), emptyList(), copie.stations, mesFavoris = true)) + copie.sousDossiers,
+                            emptyList(),
+                        ),
+                    )
+                } else {
+                    val favoris = mesFavoris.charger()
+                    val liste = ArrayList<Noeud>()
+                    if (favoris.isNotEmpty()) liste += Noeud(getString(R.string.mes_favoris), emptyList(), favoris, mesFavoris = true)
+                    liste += fichiers.charger()
+                    liste
+                }
             }
             pile.clear()
             when (racines.size) {
@@ -319,6 +398,9 @@ class MainActivity : AppCompatActivity() {
     // ---- La liste ----
 
     private fun afficher() {
+        val apparie = serveur.apparie
+        // Apparié, les fichiers n'ont plus cours ; et l'étoile attend le journal des gestes.
+        barre.menu.findItem(R.id.ouvrir).isVisible = !apparie
         if (modeRecherche) {
             retour.isEnabled = true
             barre.navigationIcon = getDrawable(R.drawable.ic_retour)
@@ -328,7 +410,7 @@ class MainActivity : AppCompatActivity() {
             recherche.visibility = View.VISIBLE
             vide.visibility = View.GONE
             liste.visibility = View.VISIBLE
-            adaptateur.montrer(Noeud(getString(R.string.annuaire), emptyList(), resultats), etoiles = true)
+            adaptateur.montrer(Noeud(getString(R.string.annuaire), emptyList(), resultats), etoiles = !apparie)
             return
         }
         recherche.visibility = View.GONE
@@ -339,8 +421,15 @@ class MainActivity : AppCompatActivity() {
         // À la racine, le logo devant le nom ; dans un dossier, la flèche retour prend sa place.
         barre.logo = if (racine) getDrawable(R.drawable.logo) else null
         barre.title = noeud?.titre ?: getString(R.string.app_name)
-        barre.subtitle = if (racine) BuildConfig.VERSION_NAME else null
+        // À la racine, le serveur apparié, s'il ne répond pas, et la version.
+        barre.subtitle = if (!racine) null else listOfNotNull(
+            serveur.nom.takeIf { apparie && it.isNotEmpty() },
+            getString(R.string.injoignable_court).takeIf { apparie && serveurInjoignable },
+            BuildConfig.VERSION_NAME,
+        ).joinToString(" · ")
         if (noeud == null) {
+            videTexte.text = if (apparie) getString(R.string.copie_absente, serveur.nom) else getString(R.string.aucun_fichier)
+            videBouton.visibility = if (apparie) View.GONE else View.VISIBLE
             vide.visibility = View.VISIBLE
             liste.visibility = View.GONE
         } else {
@@ -448,7 +537,7 @@ class MainActivity : AppCompatActivity() {
 
     /** Un appui long sur une station de « Mes favoris » propose de la retirer, sans repasser par l'annuaire. */
     private fun proposerDeRetirerDesFavoris(station: Station): Boolean {
-        if (modeRecherche || pile.lastOrNull()?.mesFavoris != true) return false
+        if (modeRecherche || serveur.apparie || pile.lastOrNull()?.mesFavoris != true) return false
         MaterialAlertDialogBuilder(this)
             .setTitle(R.string.retirer_des_favoris)
             .setMessage(station.nom)

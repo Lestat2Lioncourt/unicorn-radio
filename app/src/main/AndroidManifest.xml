@@ -8,6 +8,9 @@
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <!-- Depuis Android 13, la notification de lecture se demande. -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Lire le QR code d'appariement ; sans camera, l'adresse et le code se tapent. -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
 
     <!-- La raison d'etre du projet : les flux des stations sont, pour la
          plupart, en http simple. Une application a le droit de le dire. -->
@@ -39,6 +42,12 @@
                 <data android:mimeType="text/json" />
             </intent-filter>
         </activity>
+
+        <!-- L'ecran Serveur : apparier, mettre a jour, se detacher. -->
+        <activity
+            android:name=".ServeurActivity"
+            android:exported="false"
+            android:parentActivityName=".MainActivity" />
 
         <!-- La langue choisie par les drapeaux est gardee par AppCompat, meme
              avant Android 13 ou le systeme ne la garde pas lui-meme. -->

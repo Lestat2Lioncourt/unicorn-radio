@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="?attr/colorSurface"
+    android:fitsSystemWindows="true"
+    android:orientation="vertical">
+
+    <com.google.android.material.appbar.MaterialToolbar
+        android:id="@+id/barre"
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize"
+        app:navigationIcon="@drawable/ic_retour"
+        app:navigationIconTint="@color/icone_barre"
+        app:title="@string/serveur" />
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="24dp">
+
+            <!-- Non apparié : le QR code, ou l'adresse et le code à la main. -->
+            <LinearLayout
+                android:id="@+id/nonApparie"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/serveur_explication"
+                    android:textAppearance="?attr/textAppearanceBodyLarge" />
+
+                <Button
+                    android:id="@+id/scanner"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="24dp"
+                    android:text="@string/scanner_qr" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="32dp"
+                    android:text="@string/ou_a_la_main"
+                    android:textAppearance="?attr/textAppearanceBodyMedium"
+                    android:textColor="?attr/colorOnSurfaceVariant" />
+
+                <EditText
+                    android:id="@+id/adresse"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:hint="@string/adresse_indice"
+                    android:importantForAutofill="no"
+                    android:inputType="textUri"
+                    android:maxLines="1" />
+
+                <EditText
+                    android:id="@+id/code"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="@string/code_indice"
+                    android:importantForAutofill="no"
+                    android:inputType="textCapCharacters|textNoSuggestions"
+                    android:maxLength="8"
+                    android:maxLines="1" />
+
+                <Button
+                    android:id="@+id/apparierBouton"
+                    style="@style/Widget.Material3.Button.TonalButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:text="@string/apparier" />
+            </LinearLayout>
+
+            <!-- Apparié : ce qu'on sait du serveur, mettre à jour, se détacher. -->
+            <LinearLayout
+                android:id="@+id/apparie"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <TextView
+                    android:id="@+id/apparieTitre"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textAppearance="?attr/textAppearanceTitleLarge" />
+
+                <TextView
+                    android:id="@+id/apparieUtilisateur"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:textAppearance="?attr/textAppearanceBodyLarge" />
+
+                <TextView
+                    android:id="@+id/apparieAdresse"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:textAppearance="?attr/textAppearanceBodyLarge" />
+
+                <TextView
+                    android:id="@+id/apparieCopie"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:textAppearance="?attr/textAppearanceBodyLarge" />
+
+                <Button
+                    android:id="@+id/mettreAJour"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="24dp"
+                    android:text="@string/mettre_a_jour" />
+
+                <Button
+                    android:id="@+id/detacher"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="@string/se_detacher" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/etat"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="24dp"
+                android:textAppearance="?attr/textAppearanceBodyMedium"
+                android:textColor="?attr/colorOnSurfaceVariant" />
+        </LinearLayout>
+    </ScrollView>
+</LinearLayout>

@@ -86,6 +86,7 @@
             android:visibility="gone">
 
             <TextView
+                android:id="@+id/videTexte"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="@string/aucun_fichier"
@@ -106,6 +107,14 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
                 android:text="@string/chercher" />
+
+            <Button
+                android:id="@+id/videServeur"
+                style="@style/Widget.Material3.Button.TextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="@string/apparier_un_serveur" />
         </LinearLayout>
     </FrameLayout>
 

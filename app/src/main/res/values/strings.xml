@@ -36,6 +36,42 @@
     <string name="favori_ajoute">Added to favourites: %s</string>
     <string name="favori_retire">Removed from favourites: %s</string>
     <string name="langue">Language</string>
+    <string name="serveur">Server</string>
+    <string name="serveur_explication">Pair this phone with your Unicorn-TV: its favourites and folders replace the files here, and stay in step with it.</string>
+    <string name="scanner_qr">Scan the QR code</string>
+    <string name="ou_a_la_main">Or by hand, with the address and the code shown next to the QR code:</string>
+    <string name="adresse_indice" translatable="false">http://192.168.1.20:3000</string>
+    <string name="code_indice">Six-character code</string>
+    <string name="apparier">Pair</string>
+    <string name="apparier_un_serveur">Pair a server…</string>
+    <string name="serveur_recherche">Looking for the server…</string>
+    <string name="serveur_injoignable">Server unreachable</string>
+    <string name="code_inconnu">Unknown or expired code</string>
+    <string name="trop_d_essais">Too many attempts: wait ten minutes</string>
+    <string name="qr_pas_un_appariement">This QR code is not a Unicorn-TV pairing code</string>
+    <string name="camera_refusee">Without the camera, type the address and the code.</string>
+    <string name="serveur_apparie_titre">Paired with %s</string>
+    <string name="serveur_utilisateur">User: %s</string>
+    <string name="serveur_adresse">Address: %s</string>
+    <string name="serveur_copie">Last copy: %s</string>
+    <string name="serveur_copie_jamais">No copy yet</string>
+    <string name="mettre_a_jour">Update</string>
+    <string name="mise_a_jour_en_cours">Updating…</string>
+    <string name="mise_a_jour_faite">Copy updated: %d stations</string>
+    <string name="se_detacher">Detach</string>
+    <string name="se_detacher_texte">This phone will forget %s and go back to its files. The server\'s list is untouched.</string>
+    <string name="detache">Detached from %s</string>
+    <string name="revoque">%s no longer knows this phone: back to the files.</string>
+    <string name="copie_absente">Paired with %s, but no copy yet.\n\nUpdate from the Server screen.</string>
+    <string name="injoignable_court">unreachable</string>
+    <string name="serveur_injoignable_detail">Server unreachable: %1$s, %2$s</string>
+    <string name="raison_delai">no answer in five seconds</string>
+    <string name="raison_refusee">connection refused</string>
+    <string name="raison_adresse_inconnue">unknown address</string>
+    <string name="raison_pas_unicorn_tv">not a Unicorn-TV</string>
+    <string name="raison_autre_serveur">another server, %s</string>
+    <string name="raison_aucune_adresse">no address</string>
+    <string name="champs_vides">Type the address and the code.</string>
     <!-- Les noms des langues, dans leur langue : les mêmes partout. -->
     <string name="langue_francais" translatable="false">Français</string>
     <string name="langue_anglais" translatable="false">English</string>

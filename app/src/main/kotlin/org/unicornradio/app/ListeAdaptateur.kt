@@ -7,6 +7,7 @@ import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
+import coil.dispose
 import coil.load
 import org.unicornradio.app.modele.Noeud
 import org.unicornradio.app.modele.Station
@@ -101,6 +102,8 @@ class ListeAdaptateur(
                 vue.itemView.isActivated = s.uuid == enCours
                 vue.initiales?.text = s.initiales
                 vue.initiales?.visibility = View.VISIBLE
+                // Le chargement en cours pour la station d'avant est annulé : sinon son logo arrive sur cette ligne.
+                vue.logo?.dispose()
                 vue.logo?.setImageDrawable(null)
                 if (!s.logo.isNullOrBlank()) {
                     vue.logo?.load(s.logo) {

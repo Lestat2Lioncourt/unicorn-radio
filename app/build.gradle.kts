@@ -20,8 +20,8 @@ android {
         applicationId = "org.unicornradio.app"
         minSdk = 26
         targetSdk = 36
-        versionCode = 4
-        versionName = "0.4.0"
+        versionCode = 6
+        versionName = "0.5.1"
     }
 
     signingConfigs {
@@ -65,4 +65,5 @@ dependencies {
     implementation(libs.androidx.media3.exoplayer.hls)
     implementation(libs.androidx.media3.session)
     implementation(libs.coil)
+    implementation(libs.zxing)
 }
