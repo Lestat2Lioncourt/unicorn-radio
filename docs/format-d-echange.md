@@ -27,11 +27,17 @@ d'autres** :
 Unicorn-Radio **ne lit que `radio`** et ignore tout le reste : `local` et
 `server` portent les réglages et les clefs de l'installation, qui ne
 regardent pas le téléphone, et `bibliotheque` les chaînes de télévision.
-Il accepte aussi un fichier réduit à la section seule, un objet qui a
-`favoris` et `dossiers` à sa racine. Quand il écrit, il écrit la section
-seule, avec `"application": "unicorn-radio"` et `"exportedAt"` à côté
-d'elle pour qu'on sache d'où vient le fichier ; l'import d'Unicorn-TV
-passe par la même enveloppe, qui ne lit que `radio`.
+Depuis le même soir, Unicorn-TV sait aussi produire le fichier **réduit à
+la radio**, `unicorn-radios-AAAA-MM-JJ.json` : la même enveloppe,
+`application`, `version`, `exportedAt`, et la seule clef `radio`. C'est
+celui qu'on donne au téléphone ou à quelqu'un : « Radios seulement » dans
+ses réglages, ou « Emporter mes radios… » au clic droit dans le vide de
+l'arbre de sa page radio. Unicorn-Radio lit les deux de la même façon, et
+accepte encore un objet qui a `favoris` et `dossiers` à sa racine.
+
+Quand Unicorn-Radio écrit, il écrit l'enveloppe réduite, avec
+`"application": "unicorn-radio"`, `"version": 2` et `"exportedAt"`.
+L'import d'Unicorn-TV accepte ce nom d'application et ne lit que `radio`.
 
 ## La section `radio`
 
