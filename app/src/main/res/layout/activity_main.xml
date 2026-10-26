@@ -11,7 +11,11 @@
         android:id="@+id/barre"
         android:layout_width="match_parent"
         android:layout_height="?attr/actionBarSize"
-        app:subtitleTextAppearance="?attr/textAppearanceLabelMedium" />
+        app:contentInsetStartWithNavigation="0dp"
+        app:logoAdjustViewBounds="true"
+        app:navigationIconTint="@color/icone_barre"
+        app:subtitleTextAppearance="?attr/textAppearanceLabelMedium"
+        app:titleMarginStart="12dp" />
 
     <!-- Le mode recherche : le nom, puis le pays et le style, puis l'état. -->
     <LinearLayout

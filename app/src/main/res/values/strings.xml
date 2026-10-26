@@ -35,4 +35,8 @@
     <string name="retirer_des_favoris">Remove from favourites</string>
     <string name="favori_ajoute">Added to favourites: %s</string>
     <string name="favori_retire">Removed from favourites: %s</string>
+    <string name="langue">Language</string>
+    <!-- Les noms des langues, dans leur langue : les mêmes partout. -->
+    <string name="langue_francais" translatable="false">Français</string>
+    <string name="langue_anglais" translatable="false">English</string>
 </resources>

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Les icônes de la barre, flèche retour, loupe, fichier : un gris moyen,
+         plus doux que le texte du thème, mais pas blanc. -->
+    <color name="icone_barre">#5F6368</color>
+</resources>

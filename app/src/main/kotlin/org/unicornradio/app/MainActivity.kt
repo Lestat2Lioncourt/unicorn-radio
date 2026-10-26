@@ -24,6 +24,8 @@ import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.app.AppCompatDelegate
+import androidx.core.os.LocaleListCompat
 import androidx.core.widget.doAfterTextChanged
 import androidx.lifecycle.lifecycleScope
 import androidx.media3.common.C
@@ -150,6 +152,7 @@ class MainActivity : AppCompatActivity() {
             }
         }
         barre.setNavigationOnClickListener { retour.handleOnBackPressed() }
+        poserLesDrapeaux()
         findViewById<View>(R.id.videBouton).setOnClickListener { ouvrirUnFichier() }
         findViewById<View>(R.id.videChercher).setOnClickListener { entrerDansLaRecherche() }
         lectureBouton.setOnClickListener { basculerLecture() }
@@ -214,6 +217,31 @@ class MainActivity : AppCompatActivity() {
         controleur = null
         controleurFutur = null
         super.onStop()
+    }
+
+    // ---- La langue ----
+
+    /**
+     * Les deux drapeaux de la barre, comme sur le bureau : celui de la langue
+     * active est net, l'autre atténué, appuyer choisit. Le choix passe par
+     * AppCompat, qui le garde et relance l'écran ; le son, dans le service,
+     * continue. Sans choix, la langue du téléphone, et l'anglais sinon.
+     */
+    private fun poserLesDrapeaux() {
+        val drapeaux = barre.menu.findItem(R.id.langues).actionView ?: return
+        val fr = drapeaux.findViewById<View>(R.id.drapeauFr)
+        val en = drapeaux.findViewById<View>(R.id.drapeauEn)
+        val active = resources.configuration.locales[0].language
+        fr.alpha = if (active == "fr") 1f else 0.4f
+        en.alpha = if (active == "fr") 0.4f else 1f
+        fr.setOnClickListener { choisirLaLangue("fr") }
+        en.setOnClickListener { choisirLaLangue("en") }
+    }
+
+    private fun choisirLaLangue(langue: String) {
+        if (resources.configuration.locales[0].language == langue) return
+        if (modeRecherche) quitterLaRecherche(sansAfficher = true)
+        AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(langue))
     }
 
     // ---- Les fichiers ----
@@ -294,6 +322,7 @@ class MainActivity : AppCompatActivity() {
         if (modeRecherche) {
             retour.isEnabled = true
             barre.navigationIcon = getDrawable(R.drawable.ic_retour)
+            barre.logo = null
             barre.title = getString(R.string.annuaire)
             barre.subtitle = null
             recherche.visibility = View.VISIBLE
@@ -307,6 +336,8 @@ class MainActivity : AppCompatActivity() {
         val racine = pile.size <= 1
         retour.isEnabled = !racine
         barre.navigationIcon = if (racine) null else getDrawable(R.drawable.ic_retour)
+        // À la racine, le logo devant le nom ; dans un dossier, la flèche retour prend sa place.
+        barre.logo = if (racine) getDrawable(R.drawable.logo) else null
         barre.title = noeud?.titre ?: getString(R.string.app_name)
         barre.subtitle = if (racine) BuildConfig.VERSION_NAME else null
         if (noeud == null) {

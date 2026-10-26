@@ -34,4 +34,5 @@
     <string name="retirer_des_favoris">Retirer des favoris</string>
     <string name="favori_ajoute">Ajoutée aux favoris : %s</string>
     <string name="favori_retire">Retirée des favoris : %s</string>
+    <string name="langue">Langue</string>
 </resources>

@@ -3,6 +3,13 @@
 Une entrée par chantier, la plus récente en tête. Le détail de chacun est
 dans `correctifs/`.
 
+## 2026-10-26 — 004 · Les deux langues
+
+Comme sur le bureau : deux drapeaux en haut à droite, français et anglais,
+l'actif net et l'autre atténué ; appuyer change la langue de l'écran sans
+couper le son, et le choix est gardé. Et le logo devant le nom, en haut à
+gauche.
+
 ## 2026-10-26 — 003 · Chercher dans l'annuaire
 
 Le palier 2 : la loupe cherche dans Radio Browser, par nom, pays et style,

@@ -4,11 +4,18 @@
     <item
         android:id="@+id/chercher"
         android:icon="@drawable/ic_loupe"
+        app:iconTint="@color/icone_barre"
         android:title="@string/chercher"
         app:showAsAction="always" />
     <item
         android:id="@+id/ouvrir"
         android:icon="@drawable/ic_fichier"
+        app:iconTint="@color/icone_barre"
         android:title="@string/ouvrir_un_fichier"
+        app:showAsAction="always" />
+    <item
+        android:id="@+id/langues"
+        android:title="@string/langue"
+        app:actionLayout="@layout/drapeaux"
         app:showAsAction="always" />
 </menu>
