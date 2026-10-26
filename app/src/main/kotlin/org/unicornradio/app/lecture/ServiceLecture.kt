@@ -17,6 +17,7 @@ import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
 import org.unicornradio.app.BuildConfig
 import org.unicornradio.app.MainActivity
+import org.unicornradio.app.annuaire.Annuaire
 import org.unicornradio.app.fichier.Fichiers
 
 /**
@@ -70,10 +71,22 @@ class ServiceLecture : MediaSessionService() {
         super.onDestroy()
     }
 
-    /** Ce qui se passe, dans Logcat : la station lancée, l'état, le titre, l'échec et sa cause. */
+    /**
+     * Ce qui se passe, dans Logcat : la station lancée, l'état, le titre,
+     * l'échec et sa cause. Et à chaque station lancée, l'écoute est signalée
+     * à l'annuaire, qui la compte ; l'adresse à jour qu'il rend est notée,
+     * la lecture déjà partie n'est pas interrompue.
+     */
     private object Journal : Player.Listener {
         override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
-            if (mediaItem != null) Log.i(Fichiers.JOURNAL, "lecture « ${mediaItem.mediaMetadata.station} » ${mediaItem.localConfiguration?.uri}")
+            if (mediaItem == null) return
+            val uri = mediaItem.localConfiguration?.uri
+            Log.i(Fichiers.JOURNAL, "lecture « ${mediaItem.mediaMetadata.station} » $uri")
+            val uuid = mediaItem.mediaId
+            Thread {
+                val aJour = Annuaire.signalerEcoute(uuid)
+                if (aJour != null && aJour != uri.toString()) Log.i(Fichiers.JOURNAL, "l'annuaire donne une autre adresse pour $uuid : $aJour")
+            }.start()
         }
 
         override fun onPlaybackStateChanged(playbackState: Int) {

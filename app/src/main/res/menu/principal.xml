@@ -2,6 +2,11 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
     <item
+        android:id="@+id/chercher"
+        android:icon="@drawable/ic_loupe"
+        android:title="@string/chercher"
+        app:showAsAction="always" />
+    <item
         android:id="@+id/ouvrir"
         android:icon="@drawable/ic_fichier"
         android:title="@string/ouvrir_un_fichier"

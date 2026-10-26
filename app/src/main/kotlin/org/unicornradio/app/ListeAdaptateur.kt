@@ -3,6 +3,7 @@ package org.unicornradio.app
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
@@ -18,16 +19,20 @@ sealed class Ligne {
 
 /**
  * La liste d'un noeud : ses sous-dossiers, puis ses stations, une par ligne
- * et dans l'ordre du fichier, comme sur le bureau. La station en
- * cours est marquée.
+ * et dans l'ordre du fichier, comme sur le bureau. La station en cours est
+ * marquée. Sur les résultats de l'annuaire, chaque station porte une étoile.
  */
 class ListeAdaptateur(
     private val surDossier: (Noeud) -> Unit,
     private val surDossierLong: (Noeud) -> Boolean,
     private val surStation: (Station) -> Unit,
+    private val surStationLong: (Station) -> Boolean,
+    private val estFavorite: (Station) -> Boolean,
+    private val surEtoile: (Station) -> Unit,
 ) : RecyclerView.Adapter<ListeAdaptateur.Vue>() {
 
     private var lignes: List<Ligne> = emptyList()
+    private var avecEtoiles = false
 
     var enCours: String? = null
         set(valeur) {
@@ -36,9 +41,16 @@ class ListeAdaptateur(
             notifyDataSetChanged()
         }
 
-    fun montrer(noeud: Noeud) {
+    fun montrer(noeud: Noeud, etoiles: Boolean = false) {
         lignes = noeud.sousDossiers.map { Ligne.Dossier(it) } + noeud.stations.map { Ligne.Station(it) }
+        avecEtoiles = etoiles
         notifyDataSetChanged()
+    }
+
+    /** Après une étoile : redessiner la ligne de cette station. */
+    fun rafraichir(station: Station) {
+        val i = lignes.indexOfFirst { it is Ligne.Station && it.station.uuid == station.uuid }
+        if (i >= 0) notifyItemChanged(i)
     }
 
     val stations: List<Station>
@@ -48,6 +60,7 @@ class ListeAdaptateur(
         val logo: ImageView? = v.findViewById(R.id.logo)
         val initiales: TextView? = v.findViewById(R.id.initiales)
         val icone: ImageView? = v.findViewById(R.id.icone)
+        val etoile: ImageButton? = v.findViewById(R.id.etoile)
         val nom: TextView = v.findViewById(R.id.nom)
         val detail: TextView = v.findViewById(R.id.detail)
     }
@@ -67,7 +80,13 @@ class ListeAdaptateur(
         when (val ligne = lignes[position]) {
             is Ligne.Dossier -> {
                 val n = ligne.noeud
-                vue.icone?.setImageResource(if (n.fichier != null) R.drawable.ic_fichier else R.drawable.ic_dossier)
+                vue.icone?.setImageResource(
+                    when {
+                        n.mesFavoris -> R.drawable.ic_etoile
+                        n.fichier != null -> R.drawable.ic_fichier
+                        else -> R.drawable.ic_dossier
+                    },
+                )
                 vue.nom.text = n.titre
                 vue.detail.text = c.resources.getQuantityString(R.plurals.nombre_de_stations, n.nombreDeStations, n.nombreDeStations)
                 vue.itemView.isActivated = false
@@ -89,8 +108,20 @@ class ListeAdaptateur(
                         listener(onSuccess = { _, _ -> vue.initiales?.visibility = View.GONE })
                     }
                 }
+                vue.etoile?.let { e ->
+                    if (avecEtoiles) {
+                        e.visibility = View.VISIBLE
+                        val favorite = estFavorite(s)
+                        e.setImageResource(if (favorite) R.drawable.ic_etoile else R.drawable.ic_etoile_vide)
+                        e.contentDescription = c.getString(if (favorite) R.string.retirer_des_favoris else R.string.ajouter_aux_favoris)
+                        e.setOnClickListener { surEtoile(s) }
+                    } else {
+                        e.visibility = View.GONE
+                        e.setOnClickListener(null)
+                    }
+                }
                 vue.itemView.setOnClickListener { surStation(s) }
-                vue.itemView.setOnLongClickListener(null)
+                vue.itemView.setOnLongClickListener { surStationLong(s) }
             }
         }
     }

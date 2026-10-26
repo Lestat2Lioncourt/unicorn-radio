@@ -45,6 +45,8 @@ class Noeud(
     val stations: List<Station>,
     /** Le nom du fichier dont ce noeud est la racine, sinon `null`. */
     val fichier: String? = null,
+    /** La liste « Mes favoris » du téléphone. */
+    val mesFavoris: Boolean = false,
 ) {
     val nombreDeStations: Int
         get() = stations.size + sousDossiers.sumOf { it.nombreDeStations }

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="ouvrir_un_fichier">Ouvrir un fichier…</string>
-    <string name="aucun_fichier">Aucun fichier pour l\'instant.\n\nOuvrez un fichier d\'export : ses favoris et ses dossiers apparaîtront ici.</string>
+    <string name="aucun_fichier">Aucun fichier pour l\'instant.\n\nOuvrez un fichier d\'export, ou cherchez dans l\'annuaire et mettez une étoile aux stations qui vous plaisent.</string>
     <plurals name="nombre_de_stations">
         <item quantity="one">%d station</item>
         <item quantity="other">%d stations</item>
@@ -19,4 +19,19 @@
     <string name="lecteur_pas_pret">Le lecteur n\'est pas encore prêt</string>
     <string name="lire">Lire</string>
     <string name="pause">Pause</string>
+    <string name="chercher">Chercher dans l\'annuaire</string>
+    <string name="annuaire">Annuaire</string>
+    <string name="recherche_indice">Nom de la station</string>
+    <string name="tous_les_pays">Tous les pays</string>
+    <string name="tous_les_styles">Tous les styles</string>
+    <string name="recherche_tapez">Tapez deux lettres, ou choisissez un pays ou un style.</string>
+    <string name="recherche_en_cours">Recherche…</string>
+    <string name="recherche_rien">Aucune station trouvée.</string>
+    <string name="recherche_nombre">%d stations, les plus votées d\'abord.</string>
+    <string name="annuaire_injoignable">Annuaire injoignable : %s</string>
+    <string name="mes_favoris">Mes favoris</string>
+    <string name="ajouter_aux_favoris">Ajouter aux favoris</string>
+    <string name="retirer_des_favoris">Retirer des favoris</string>
+    <string name="favori_ajoute">Ajoutée aux favoris : %s</string>
+    <string name="favori_retire">Retirée des favoris : %s</string>
 </resources>

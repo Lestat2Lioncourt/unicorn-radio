@@ -3,6 +3,13 @@
 Une entrée par chantier, la plus récente en tête. Le détail de chacun est
 dans `correctifs/`.
 
+## 2026-10-26 — 003 · Chercher dans l'annuaire
+
+Le palier 2 : la loupe cherche dans Radio Browser, par nom, pays et style,
+directement depuis le téléphone, avec les mêmes identifiants que le fichier
+d'échange ; l'étoile met une station dans « Mes favoris », un fichier à part
+au format d'échange ; chaque écoute est comptée par l'annuaire.
+
 ## 2026-10-25 — 002 · Lire le fichier, jouer
 
 Le palier 1 : l'application ouvre un fichier d'export, par « Ouvrir

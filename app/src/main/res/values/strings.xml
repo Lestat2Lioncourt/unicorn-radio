@@ -2,7 +2,7 @@
 <resources>
     <string name="app_name">Unicorn-Radio</string>
     <string name="ouvrir_un_fichier">Open a file…</string>
-    <string name="aucun_fichier">No file yet.\n\nOpen an export file: its favourites and folders will show up here.</string>
+    <string name="aucun_fichier">No file yet.\n\nOpen an export file, or search the directory and star the stations you like.</string>
     <plurals name="nombre_de_stations">
         <item quantity="one">%d station</item>
         <item quantity="other">%d stations</item>
@@ -20,4 +20,19 @@
     <string name="lecteur_pas_pret">The player is not ready yet</string>
     <string name="lire">Play</string>
     <string name="pause">Pause</string>
+    <string name="chercher">Search the directory</string>
+    <string name="annuaire">Directory</string>
+    <string name="recherche_indice">Station name</string>
+    <string name="tous_les_pays">All countries</string>
+    <string name="tous_les_styles">All styles</string>
+    <string name="recherche_tapez">Type two letters, or pick a country or a style.</string>
+    <string name="recherche_en_cours">Searching…</string>
+    <string name="recherche_rien">No station found.</string>
+    <string name="recherche_nombre">%d stations, most voted first.</string>
+    <string name="annuaire_injoignable">Directory unreachable: %s</string>
+    <string name="mes_favoris">My favourites</string>
+    <string name="ajouter_aux_favoris">Add to favourites</string>
+    <string name="retirer_des_favoris">Remove from favourites</string>
+    <string name="favori_ajoute">Added to favourites: %s</string>
+    <string name="favori_retire">Removed from favourites: %s</string>
 </resources>
