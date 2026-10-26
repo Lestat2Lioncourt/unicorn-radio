@@ -46,9 +46,29 @@ Chacun utilisable seul.
 ## Plus tard, peut-être
 
 - Les podcasts, qui sont du RSS : le fichier d'échange les porte déjà.
-- Aller chercher le fichier directement sur l'Unicorn-TV de la maison, par
-  son adresse ou son QR code, sans passer par un envoi.
+- **La synchronisation avec l'Unicorn-TV de la maison**, décidée le
+  2026-10-26 et décrite dans `format-d-echange.md` : l'application s'apparie
+  à un serveur précis par QR code, ou code court tapé à la main ; le serveur
+  est seul maître de la liste, le téléphone en tire la copie et lui renvoie
+  ses gestes, horodatés et rejouables, faits hors ligne compris. Tant qu'elle
+  n'est pas appariée, l'application reste en mode fichiers, avec ses favoris
+  locaux, versés au serveur à l'appariement. Rien n'existe encore d'aucun
+  côté ; Unicorn-TV construit les routes, l'application vient ensuite.
 - Un égaliseur, comme sur le bureau.
+- **Proposer la mise à jour**, demandé le 2026-10-26 : à l'ouverture, au
+  plus une fois par jour, l'application demande à GitHub la dernière version
+  publiée dans les « Releases » du dépôt, et s'il y a plus récent, le dit,
+  avec la note de version dans la langue de l'application, français ou
+  anglais, écrite dans les deux comme sur le bureau, et deux boutons,
+  installer ou plus tard. Jamais
+  d'installation sans le geste de l'utilisateur, et l'installeur d'Android
+  confirme encore. Deux prérequis : une clef de signature de publication,
+  stable et gardée hors du dépôt, sans quoi Android refuse la mise à jour
+  par-dessus l'APK de débogage ; et la procédure de publication,
+  `prompts/publier.md`, étiquette, note de version et APK joint à la
+  release. Pour commencer, le bouton peut ouvrir la page de la version dans
+  le navigateur ; télécharger et lancer l'installeur depuis l'application
+  viendra après, avec la permission d'installer des paquets.
 
 ## Écarté
 
