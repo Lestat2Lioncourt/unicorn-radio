@@ -179,9 +179,11 @@ elle est appariée à un serveur précis, reconnu par son identité.
 
 ### L'appariement
 
-Dans Unicorn-TV, le bloc « Écouter sur le téléphone… » d'un dossier (ou
-des réglages) montre un **QR code d'appariement** et, à côté, ce qu'il
-porte en clair pour une saisie à la main. Le QR code contient ce JSON :
+Dans Unicorn-TV, le clic droit dans le vide de l'arbre de la page radio,
+entrée « Apparier un téléphone… », montre un **QR code d'appariement** et,
+à côté, ce qu'il porte en clair pour une saisie à la main. L'appariement
+est par utilisateur, pas par dossier, d'où sa place. Le QR code contient
+ce JSON :
 
 ```json
 {
@@ -198,9 +200,11 @@ porte en clair pour une saisie à la main. Le QR code contient ce JSON :
   la page téléphone les liste déjà. L'application essaie dans l'ordre et
   garde la première qui répond à `GET /api/radio/serveur` avec le bon
   `serveur`.
-- `code` : un code d'appariement court, six caractères, valable dix
-  minutes, à usage unique. C'est lui qu'on tape si la caméra manque, avec
-  l'une des adresses.
+- `code` : un code d'appariement court, six caractères pris dans
+  `ABCDEFGHJKMNPQRSTUVWXYZ23456789`, sans 0, O, 1, I ni L qui se
+  confondent, valable dix minutes, à usage unique. C'est lui qu'on tape si
+  la caméra manque, avec l'une des adresses ; le serveur l'accepte en
+  minuscules, avec des espaces ou des tirets.
 
 L'application échange ensuite le code contre un jeton :
 
@@ -216,15 +220,20 @@ Réponse :
 ```
 
 - `appareil.id` : un identifiant que l'application crée une fois pour
-  toutes et garde ; `appareil.nom`, ce qu'elle affiche.
+  toutes et garde ; `appareil.nom`, ce qu'elle affiche. Le même `id`
+  réapparié reçoit un jeton neuf, et l'ancien ne vaut plus.
 - `jeton` : secret, long, propre à ce couple appareil–utilisateur. Le
   serveur ne le garde que haché, et le montre une seule fois. Il n'expire
   pas ; il se révoque.
 
+Un code inconnu ou périmé répond `404`. Dix codes faux depuis une même
+adresse : `429` pendant dix minutes.
+
 L'application retient `serveur`, `adresses`, `jeton`, `utilisateur`.
-Toutes les routes qui suivent portent `Authorization: Bearer <jeton>` ;
-une réponse `401` veut dire que le jeton a été révoqué : l'application
-repasse en mode fichiers et le dit.
+Toutes les routes qui suivent portent `Authorization: Bearer <jeton>` ; le
+jeton n'ouvre que les routes `/api/radio/*`. Une réponse `401` veut dire
+que le jeton est inconnu ou révoqué : l'application repasse en mode
+fichiers et le dit.
 
 `DELETE /api/radio/appariement`, avec le jeton, le révoque depuis le
 téléphone. Dans Unicorn-TV, les réglages listent les appareils appariés,
@@ -289,7 +298,15 @@ Chaque geste porte :
 
 Une `station` est une fiche complète, comme dans le fichier : le serveur
 l'ajoute à sa copie de l'annuaire s'il ne la connaît pas. Un geste refusé
-l'est seul, les autres passent.
+l'est seul, les autres passent. Au plus 2000 gestes par appel. Le champ
+`appareil` du corps n'est pas lu, c'est le jeton qui dit qui parle ;
+l'application l'écrit quand même.
+
+Les raisons de refus, telles que le serveur les écrit : « identifiant
+absent » (un geste sans `id`, chaîne non vide), « type inconnu »,
+« dossier inconnu », « chemin vide », « nom vide », « liste absente »,
+« station sans identifiant », « station inconnue », « station sans
+identifiant ou sans adresse ».
 
 Réponse :
 
@@ -315,16 +332,17 @@ décider plus tard.
 
 ### Ce que ça demande à Unicorn-TV
 
-À faire là-bas, rien n'existe encore : l'identité du serveur et son nom,
-la route `GET /api/radio/serveur`, le QR code d'appariement et le code
-court, les routes d'appariement et de révocation, le jeton accepté par
-`GET /api/radio/export`, la route `POST /api/radio/gestes` avec la mémoire
-des gestes vus, et la liste des appareils dans les réglages.
+L'identité du serveur et son nom, la route `GET /api/radio/serveur`, le
+QR code d'appariement et le code court, les routes d'appariement et de
+révocation, le jeton accepté par `GET /api/radio/export`, la route
+`POST /api/radio/gestes` avec la mémoire des gestes vus, et la liste des
+appareils dans les réglages. Construit là-bas le 2026-10-26, chantier 222.
 
 ## Côté Unicorn-TV
 
 `"format": 1` est écrit dans la section depuis le 2026-10-25 au soir
 (`server/routes/radio.js`, route `GET /api/radio/export`), et le fichier
-réduit « Radios seulement » existe depuis le 2026-10-26 (221 là-bas). La
-synchronisation décrite ci-dessus n'est pas encore construite d'aucun
-côté ; ce contrat la précède.
+réduit « Radios seulement » existe depuis le 2026-10-26 (221 là-bas). Le
+côté serveur de la synchronisation est construit le même jour (222
+là-bas) ; l'identité est dans `data/serveur.json`, créée au premier
+démarrage. Côté Unicorn-Radio, rien n'est construit encore.
