@@ -3,6 +3,15 @@
 Une entrée par chantier, la plus récente en tête. Le détail de chacun est
 dans `correctifs/`.
 
+## 2026-10-25 — 002 · Lire le fichier, jouer
+
+Le palier 1 : l'application ouvre un fichier d'export, par « Ouvrir
+avec » ou depuis les fichiers du téléphone, montre ses favoris et ses
+dossiers, une ligne par station, et joue : Media3 en service d'arrière-plan,
+avec notification, écran de verrouillage, boutons du casque, et le titre en
+cours par les métadonnées ICY. Le `http` en clair joue, l'AAC brut et le HLS
+aussi.
+
 ## 2026-10-25 — 001 · Le socle
 
 Le dépôt, public sous GPL-3.0 comme Unicorn-TV, et une application vide qui

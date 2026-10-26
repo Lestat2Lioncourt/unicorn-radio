@@ -1,5 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Unicorn-Radio</string>
-    <string name="bonjour">Unicorn-Radio %1$s\nNothing plays yet.</string>
+    <string name="ouvrir_un_fichier">Open a file…</string>
+    <string name="aucun_fichier">No file yet.\n\nOpen an export file: its favourites and folders will show up here.</string>
+    <plurals name="nombre_de_stations">
+        <item quantity="one">%d station</item>
+        <item quantity="other">%d stations</item>
+    </plurals>
+    <string name="fichier_ajoute">%1$s: %2$d stations</string>
+    <string name="fichier_illisible">Unreadable file: %s</string>
+    <string name="retirer_fichier_titre">Remove this file?</string>
+    <string name="retirer_fichier_texte">%s will be removed from the app. The original stays where it was.</string>
+    <string name="retirer">Remove</string>
+    <string name="annuler">Cancel</string>
+    <string name="connexion">Connecting…</string>
+    <string name="en_direct">Live</string>
+    <string name="en_pause">Paused</string>
+    <string name="injoignable">Unreachable (%s)</string>
+    <string name="lecteur_pas_pret">The player is not ready yet</string>
+    <string name="lire">Play</string>
+    <string name="pause">Pause</string>
 </resources>

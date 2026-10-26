@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- La station en cours est marquée : la ligne « activée » prend la couleur du conteneur secondaire. -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_activated="true">
+        <shape android:shape="rectangle">
+            <solid android:color="?attr/colorSecondaryContainer" />
+        </shape>
+    </item>
+    <item android:drawable="@android:color/transparent" />
+</selector>

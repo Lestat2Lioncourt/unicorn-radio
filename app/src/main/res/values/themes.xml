@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.UnicornRadio" parent="Theme.AppCompat.DayNight.NoActionBar" />
+    <style name="Theme.UnicornRadio" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/ic_launcher_background</item>
+    </style>
     <!-- Le bleu du bord du logo, relevé sur l'image : le rond du calque de
          premier plan se fond dedans sur les masques carrés ou arrondis. -->
     <color name="ic_launcher_background">#0735D2</color>

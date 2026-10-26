@@ -1,4 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="bonjour">Unicorn-Radio %1$s\nRien ne joue encore.</string>
+    <string name="ouvrir_un_fichier">Ouvrir un fichier…</string>
+    <string name="aucun_fichier">Aucun fichier pour l\'instant.\n\nOuvrez un fichier d\'export : ses favoris et ses dossiers apparaîtront ici.</string>
+    <plurals name="nombre_de_stations">
+        <item quantity="one">%d station</item>
+        <item quantity="other">%d stations</item>
+    </plurals>
+    <string name="fichier_ajoute">%1$s : %2$d stations</string>
+    <string name="fichier_illisible">Fichier illisible : %s</string>
+    <string name="retirer_fichier_titre">Retirer ce fichier ?</string>
+    <string name="retirer_fichier_texte">%s sera retiré de l\'application. L\'original reste où il était.</string>
+    <string name="retirer">Retirer</string>
+    <string name="annuler">Annuler</string>
+    <string name="connexion">Connexion…</string>
+    <string name="en_direct">En direct</string>
+    <string name="en_pause">En pause</string>
+    <string name="injoignable">Injoignable (%s)</string>
+    <string name="lecteur_pas_pret">Le lecteur n\'est pas encore prêt</string>
+    <string name="lire">Lire</string>
+    <string name="pause">Pause</string>
 </resources>
