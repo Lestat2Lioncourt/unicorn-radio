@@ -21,6 +21,8 @@ object ClientServeur {
 
     class Identite(val id: String, val nom: String, val format: Int)
     class Appariement(val jeton: String, val serveur: String, val nom: String, val utilisateur: String)
+    class Refus(val id: String, val raison: String)
+    class ReponseGestes(val acceptes: Int, val dejaVus: Int, val refuses: List<Refus>)
 
     /** Pourquoi une adresse n'a pas donné le serveur attendu ; l'écran en fait un texte. */
     enum class Raison { DELAI, REFUSEE, ADRESSE_INCONNUE, HTTP, PAS_UNICORN_TV, AUTRE_SERVEUR, AUCUNE_ADRESSE, AUTRE }
@@ -123,6 +125,19 @@ object ClientServeur {
 
     /** `GET /api/radio/export` avec le jeton : la section seule, telle quelle. */
     fun export(adresse: String, jeton: String): String = demander(adresse, "GET", "/api/radio/export", jeton = jeton)
+
+    /** `POST /api/radio/gestes` avec le jeton : le journal, dans l'ordre ; le serveur dit ce qu'il en a fait. */
+    fun gestes(adresse: String, jeton: String, appareilId: String, gestes: List<JSONObject>): ReponseGestes {
+        val corps = JSONObject().put("appareil", appareilId).put("gestes", org.json.JSONArray(gestes))
+        val o = JSONObject(demander(adresse, "POST", "/api/radio/gestes", corps = corps.toString(), jeton = jeton))
+        val refuses = ArrayList<Refus>()
+        val tableau = o.optJSONArray("refuses")
+        if (tableau != null) for (i in 0 until tableau.length()) {
+            val r = tableau.optJSONObject(i) ?: continue
+            refuses += Refus(r.optString("id"), r.optString("raison"))
+        }
+        return ReponseGestes(o.optInt("acceptes"), o.optInt("deja_vus"), refuses)
+    }
 
     /** `DELETE /api/radio/appariement` avec le jeton : le téléphone se retire. */
     fun detacher(adresse: String, jeton: String) {

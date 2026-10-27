@@ -3,6 +3,14 @@
 Une entrée par chantier, la plus récente en tête. Le détail de chacun est
 dans `correctifs/`.
 
+## 2026-10-27 — 006 · Renvoyer les favoris
+
+Le journal des gestes : chaque étoile ou retrait, apparié, est appliqué
+sur place, écrit sur le disque, et envoyé au serveur dès qu'il répond,
+toujours avant de tirer sa copie, pour qu'un geste fait hors ligne ne soit
+jamais écrasé. Les favoris locaux sont versés au serveur à l'appariement.
+Les dossiers viennent ensuite.
+
 ## 2026-10-26 — 005 · Apparier et tirer
 
 Le premier chantier de la synchronisation : l'écran Serveur apparie le

@@ -51,8 +51,10 @@ import org.unicornradio.app.lecture.versElement
 import org.unicornradio.app.modele.Noeud
 import org.unicornradio.app.modele.Station
 import org.unicornradio.app.serveur.ClientServeur
+import org.unicornradio.app.serveur.Journal
 import org.unicornradio.app.serveur.MesRadios
 import org.unicornradio.app.serveur.Serveur
+import org.unicornradio.app.serveur.Synchro
 import java.util.Locale
 
 /**
@@ -68,6 +70,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var mesFavoris: MesFavoris
     private lateinit var serveur: Serveur
     private lateinit var mesRadios: MesRadios
+    private lateinit var journal: Journal
+    private lateinit var synchro: Synchro
     private lateinit var barre: MaterialToolbar
     private lateinit var liste: RecyclerView
     private lateinit var vide: View
@@ -101,6 +105,7 @@ class MainActivity : AppCompatActivity() {
 
     // Le serveur apparié : un tirage à la fois, et la barre dit s'il ne répond pas, après deux tirages manqués de suite.
     private var tirageEnCours = false
+    private var tirageARefaire = false
     private var tiragesManques = 0
     private val serveurInjoignable: Boolean
         get() = tiragesManques >= 2
@@ -138,6 +143,8 @@ class MainActivity : AppCompatActivity() {
         mesFavoris = MesFavoris(this)
         serveur = Serveur(this)
         mesRadios = MesRadios(this)
+        journal = Journal(this)
+        synchro = Synchro(serveur, mesRadios, journal)
 
         barre = findViewById(R.id.barre)
         liste = findViewById(R.id.liste)
@@ -161,7 +168,7 @@ class MainActivity : AppCompatActivity() {
             surDossierLong = { proposerDeRetirer(it) },
             surStation = { jouer(it) },
             surStationLong = { proposerDeRetirerDesFavoris(it) },
-            estFavorite = { mesFavoris.contient(it.uuid) },
+            estFavorite = { if (serveur.apparie) mesRadios.estFavorite(it.uuid) else mesFavoris.contient(it.uuid) },
             surEtoile = { etoiler(it) },
         )
         liste.layoutManager = LinearLayoutManager(this)
@@ -274,26 +281,29 @@ class MainActivity : AppCompatActivity() {
     // ---- Le serveur ----
 
     /**
-     * Apparié, tirer la copie du serveur : à chaque retour au premier plan,
-     * donc aussi au retour de l'écran Serveur. Injoignable, la copie reste et
-     * la barre le dit ; révoqué, on repasse en mode fichiers et on le dit.
+     * Apparié, se remettre d'accord avec le serveur : le journal des gestes
+     * envoyé, puis la copie tirée. À chaque retour au premier plan, donc
+     * aussi au retour de l'écran Serveur, et après chaque geste. Un tirage
+     * demandé pendant un autre est refait à la fin. Injoignable, la copie
+     * reste et la barre le dit ; révoqué, on repasse en mode fichiers et on
+     * le dit.
      */
     private fun tirer() {
-        val jeton = serveur.jeton ?: return
-        if (tirageEnCours) return
+        if (!serveur.apparie) return
+        if (tirageEnCours) { tirageARefaire = true; return }
         tirageEnCours = true
         lifecycleScope.launch {
             try {
-                withContext(Dispatchers.IO) {
-                    val (adresse, _) = ClientServeur.trouver(serveur.adresses, serveur.id, serveur.adresseActive)
-                    mesRadios.remplacer(ClientServeur.export(adresse, jeton))
-                    serveur.noterLaCopie(adresse)
-                }
+                val resultat = withContext(Dispatchers.IO) { synchro.executer() }
                 tiragesManques = 0
+                if (resultat.refuses.isNotEmpty()) {
+                    val n = resultat.refuses.size
+                    Toast.makeText(this@MainActivity, resources.getQuantityString(R.plurals.gestes_refuses, n, n), Toast.LENGTH_LONG).show()
+                }
                 charger()
             } catch (e: ClientServeur.Revoque) {
                 val nom = serveur.nom
-                withContext(Dispatchers.IO) { serveur.oublier(); mesRadios.effacer() }
+                withContext(Dispatchers.IO) { serveur.oublier(); mesRadios.effacer(); journal.effacer() }
                 tiragesManques = 0
                 MaterialAlertDialogBuilder(this@MainActivity)
                     .setMessage(getString(R.string.revoque, nom))
@@ -307,6 +317,7 @@ class MainActivity : AppCompatActivity() {
                 if (!modeRecherche) afficher()
             } finally {
                 tirageEnCours = false
+                if (tirageARefaire) { tirageARefaire = false; tirer() }
             }
         }
     }
@@ -399,7 +410,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun afficher() {
         val apparie = serveur.apparie
-        // Apparié, les fichiers n'ont plus cours ; et l'étoile attend le journal des gestes.
+        // Apparié, les fichiers n'ont plus cours.
         barre.menu.findItem(R.id.ouvrir).isVisible = !apparie
         if (modeRecherche) {
             retour.isEnabled = true
@@ -410,7 +421,7 @@ class MainActivity : AppCompatActivity() {
             recherche.visibility = View.VISIBLE
             vide.visibility = View.GONE
             liste.visibility = View.VISIBLE
-            adaptateur.montrer(Noeud(getString(R.string.annuaire), emptyList(), resultats), etoiles = !apparie)
+            adaptateur.montrer(Noeud(getString(R.string.annuaire), emptyList(), resultats), etoiles = true)
             return
         }
         recherche.visibility = View.GONE
@@ -537,7 +548,7 @@ class MainActivity : AppCompatActivity() {
 
     /** Un appui long sur une station de « Mes favoris » propose de la retirer, sans repasser par l'annuaire. */
     private fun proposerDeRetirerDesFavoris(station: Station): Boolean {
-        if (modeRecherche || serveur.apparie || pile.lastOrNull()?.mesFavoris != true) return false
+        if (modeRecherche || pile.lastOrNull()?.mesFavoris != true) return false
         MaterialAlertDialogBuilder(this)
             .setTitle(R.string.retirer_des_favoris)
             .setMessage(station.nom)
@@ -547,10 +558,23 @@ class MainActivity : AppCompatActivity() {
         return true
     }
 
-    /** L'étoile : la station entre dans « Mes favoris » ou en sort ; la racine suit. */
+    /**
+     * L'étoile : la station entre dans « Mes favoris » ou en sort ; la racine
+     * suit. Apparié, c'est un geste : appliqué à la copie tout de suite, noté
+     * au journal, et envoyé au serveur dans la foulée s'il répond.
+     */
     private fun etoiler(station: Station) {
         lifecycleScope.launch {
-            val favorite = withContext(Dispatchers.IO) { mesFavoris.basculer(station) }
+            val favorite = withContext(Dispatchers.IO) {
+                if (serveur.apparie) {
+                    val etait = mesRadios.estFavorite(station.uuid)
+                    if (etait) { journal.favoriRetirer(station.uuid); mesRadios.retirerFavori(station.uuid) }
+                    else { journal.favoriAjouter(station); mesRadios.ajouterFavori(station) }
+                    !etait
+                } else {
+                    mesFavoris.basculer(station)
+                }
+            }
             Toast.makeText(
                 this@MainActivity,
                 getString(if (favorite) R.string.favori_ajoute else R.string.favori_retire, station.nom),
@@ -558,6 +582,7 @@ class MainActivity : AppCompatActivity() {
             ).show()
             adaptateur.rafraichir(station)
             charger()
+            if (serveur.apparie) tirer()
         }
     }
 

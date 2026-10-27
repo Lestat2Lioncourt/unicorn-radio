@@ -72,6 +72,15 @@
     <string name="raison_autre_serveur">another server, %s</string>
     <string name="raison_aucune_adresse">no address</string>
     <string name="champs_vides">Type the address and the code.</string>
+    <string name="gestes_aucun">Nothing waiting to be sent</string>
+    <plurals name="gestes_en_attente">
+        <item quantity="one">%d change waiting to be sent</item>
+        <item quantity="other">%d changes waiting to be sent</item>
+    </plurals>
+    <plurals name="gestes_refuses">
+        <item quantity="one">%d change refused by the server</item>
+        <item quantity="other">%d changes refused by the server</item>
+    </plurals>
     <!-- Les noms des langues, dans leur langue : les mêmes partout. -->
     <string name="langue_francais" translatable="false">Français</string>
     <string name="langue_anglais" translatable="false">English</string>

@@ -295,6 +295,9 @@ Chaque geste porte :
 | `dossier.retirer` | `chemin`, `station_uuid` | retire du dossier ; absent, rien |
 | `dossier.deplacer` | `chemin`, `station_uuid`, `vers` (chemin) | retire d'un dossier, ajoute à la fin de l'autre |
 | `dossier.ordonner` | `chemin`, `station_uuids` | comme `favoris.ordonner`, dans ce dossier |
+| `podcast.ajouter` | `podcast` (`flux`, `nom`, `auteur`, `image`) | ajoute à la fin des podcasts ; déjà là, rien, sa place est gardée |
+| `podcast.retirer` | `flux` | retire ; absent, rien |
+| `podcasts.ordonner` | `flux` (liste d'adresses) | met dans cet ordre ceux qui y sont ; les autres suivent |
 
 Une `station` est une fiche complète, comme dans le fichier : le serveur
 l'ajoute à sa copie de l'annuaire s'il ne la connaît pas. Un geste refusé
@@ -302,11 +305,21 @@ l'est seul, les autres passent. Au plus 2000 gestes par appel. Le champ
 `appareil` du corps n'est pas lu, c'est le jeton qui dit qui parle ;
 l'application l'écrit quand même.
 
+Les podcasts suivis entrent dans la synchronisation depuis le 2026-10-27 :
+une liste plate, sans dossiers, l'adresse du flux pour clef, les mêmes
+champs que la section `podcasts` du fichier. Exemple :
+
+```json
+{ "id": "…", "quand": "…", "type": "podcast.ajouter",
+  "podcast": { "flux": "https://…/rss", "nom": "…", "auteur": "…", "image": "https://…" } }
+```
+
 Les raisons de refus, telles que le serveur les écrit : « identifiant
 absent » (un geste sans `id`, chaîne non vide), « type inconnu »,
 « dossier inconnu », « chemin vide », « nom vide », « liste absente »,
 « station sans identifiant », « station inconnue », « station sans
-identifiant ou sans adresse ».
+identifiant ou sans adresse », « podcast sans adresse » (pas de `flux`, ou
+une adresse qui n'est pas en http ou https).
 
 Réponse :
 
@@ -345,4 +358,6 @@ appareils dans les réglages. Construit là-bas le 2026-10-26, chantier 222.
 réduit « Radios seulement » existe depuis le 2026-10-26 (221 là-bas). Le
 côté serveur de la synchronisation est construit le même jour (222
 là-bas) ; l'identité est dans `data/serveur.json`, créée au premier
-démarrage. Côté Unicorn-Radio, rien n'est construit encore.
+démarrage. Les gestes des podcasts sont construits là-bas le 2026-10-27.
+Côté Unicorn-Radio, l'appariement et le tirage sont le chantier 005, les
+gestes des favoris le 006 ; les dossiers et les podcasts suivent.

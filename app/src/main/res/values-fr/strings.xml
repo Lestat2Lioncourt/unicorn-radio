@@ -70,4 +70,13 @@
     <string name="raison_autre_serveur">un autre serveur, %s</string>
     <string name="raison_aucune_adresse">aucune adresse</string>
     <string name="champs_vides">Tapez l\'adresse et le code.</string>
+    <string name="gestes_aucun">Rien en attente d\'envoi</string>
+    <plurals name="gestes_en_attente">
+        <item quantity="one">%d changement en attente d\'envoi</item>
+        <item quantity="other">%d changements en attente d\'envoi</item>
+    </plurals>
+    <plurals name="gestes_refuses">
+        <item quantity="one">%d changement refusé par le serveur</item>
+        <item quantity="other">%d changements refusés par le serveur</item>
+    </plurals>
 </resources>

@@ -16,9 +16,12 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.unicornradio.app.fichier.Fichiers
+import org.unicornradio.app.fichier.MesFavoris
 import org.unicornradio.app.serveur.ClientServeur
+import org.unicornradio.app.serveur.Journal
 import org.unicornradio.app.serveur.MesRadios
 import org.unicornradio.app.serveur.Serveur
+import org.unicornradio.app.serveur.Synchro
 import java.text.DateFormat
 import java.util.Date
 
@@ -32,6 +35,9 @@ class ServeurActivity : AppCompatActivity() {
 
     private lateinit var serveur: Serveur
     private lateinit var mesRadios: MesRadios
+    private lateinit var journal: Journal
+    private lateinit var synchro: Synchro
+    private lateinit var apparieGestes: TextView
     private lateinit var nonApparie: View
     private lateinit var apparie: View
     private lateinit var adresse: EditText
@@ -63,6 +69,8 @@ class ServeurActivity : AppCompatActivity() {
         setContentView(R.layout.activity_serveur)
         serveur = Serveur(this)
         mesRadios = MesRadios(this)
+        journal = Journal(this)
+        synchro = Synchro(serveur, mesRadios, journal)
         setResult(RESULT_OK)
 
         val barre = findViewById<MaterialToolbar>(R.id.barre)
@@ -76,6 +84,7 @@ class ServeurActivity : AppCompatActivity() {
         apparieUtilisateur = findViewById(R.id.apparieUtilisateur)
         apparieAdresse = findViewById(R.id.apparieAdresse)
         apparieCopie = findViewById(R.id.apparieCopie)
+        apparieGestes = findViewById(R.id.apparieGestes)
 
         findViewById<View>(R.id.scanner).setOnClickListener {
             scanner.launch(ScanOptions().apply {
@@ -110,6 +119,9 @@ class ServeurActivity : AppCompatActivity() {
             val quand = serveur.derniereCopie
             apparieCopie.text = if (quand == 0L) getString(R.string.serveur_copie_jamais)
             else getString(R.string.serveur_copie, DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT).format(Date(quand)))
+            val attente = journal.nombre
+            apparieGestes.text = if (attente == 0) getString(R.string.gestes_aucun)
+            else resources.getQuantityString(R.plurals.gestes_en_attente, attente, attente)
         }
     }
 
@@ -128,11 +140,13 @@ class ServeurActivity : AppCompatActivity() {
                         adresseActive = adresse, jeton = r.jeton, utilisateur = r.utilisateur,
                     )
                     Log.i(Fichiers.JOURNAL, "serveur : apparié à « ${r.nom} » ($adresse), utilisateur ${r.utilisateur}")
-                    val racine = mesRadios.remplacer(ClientServeur.export(adresse, r.jeton))
-                    serveur.noterLaCopie(adresse)
-                    racine
+                    // Les favoris locaux versés au serveur, comme autant de gestes ; le fichier local reste, pour le détachement.
+                    val locaux = MesFavoris(this@ServeurActivity).charger()
+                    for (s in locaux) journal.favoriAjouter(s)
+                    if (locaux.isNotEmpty()) Log.i(Fichiers.JOURNAL, "serveur : ${locaux.size} favoris locaux versés au journal")
+                    synchro.executer()
                 }
-                etat.text = getString(R.string.mise_a_jour_faite, racine.nombreDeStations)
+                etat.text = resultatTexte(racine)
                 code.setText("")
                 montrer()
             } catch (e: Exception) {
@@ -156,17 +170,13 @@ class ServeurActivity : AppCompatActivity() {
         etat.text = getString(R.string.mise_a_jour_en_cours)
         lifecycleScope.launch {
             try {
-                val racine = withContext(Dispatchers.IO) {
-                    val (adresse, _) = ClientServeur.trouver(serveur.adresses, serveur.id, serveur.adresseActive)
-                    val racine = mesRadios.remplacer(ClientServeur.export(adresse, jeton))
-                    serveur.noterLaCopie(adresse)
-                    racine
-                }
-                etat.text = getString(R.string.mise_a_jour_faite, racine.nombreDeStations)
+                val resultat = withContext(Dispatchers.IO) { synchro.executer() }
+                etat.text = resultatTexte(resultat)
             } catch (e: ClientServeur.Revoque) {
                 val nom = serveur.nom
                 serveur.oublier()
                 mesRadios.effacer()
+                journal.effacer()
                 etat.text = getString(R.string.revoque, nom)
             } catch (e: Exception) {
                 Log.w(Fichiers.JOURNAL, "serveur : mise à jour : ${e.message}")
@@ -176,6 +186,13 @@ class ServeurActivity : AppCompatActivity() {
                 montrer()
             }
         }
+    }
+
+    /** « Copie à jour : N stations », et les gestes refusés s'il y en a. */
+    private fun resultatTexte(r: Synchro.Resultat): String {
+        val texte = getString(R.string.mise_a_jour_faite, r.racine.nombreDeStations)
+        if (r.refuses.isEmpty()) return texte
+        return texte + "\n" + resources.getQuantityString(R.plurals.gestes_refuses, r.refuses.size, r.refuses.size)
     }
 
     /** « Serveur injoignable : 192.168.0.25:3000, pas de réponse en cinq secondes » : l'adresse essayée et la raison. */
@@ -221,6 +238,7 @@ class ServeurActivity : AppCompatActivity() {
                 }
                 serveur.oublier()
                 mesRadios.effacer()
+                journal.effacer()
             }
             enCours = false
             etat.text = getString(R.string.detache, nom)
