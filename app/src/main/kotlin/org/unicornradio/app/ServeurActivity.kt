@@ -16,7 +16,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.unicornradio.app.fichier.Fichiers
-import org.unicornradio.app.fichier.MesFavoris
 import org.unicornradio.app.serveur.ClientServeur
 import org.unicornradio.app.serveur.Journal
 import org.unicornradio.app.serveur.MesRadios
@@ -68,7 +67,7 @@ class ServeurActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_serveur)
         serveur = Serveur(this)
-        mesRadios = MesRadios(this)
+        mesRadios = MesRadios(this, MesRadios.COPIE)
         journal = Journal(this)
         synchro = Synchro(serveur, mesRadios, journal)
         setResult(RESULT_OK)
@@ -141,7 +140,7 @@ class ServeurActivity : AppCompatActivity() {
                     )
                     Log.i(Fichiers.JOURNAL, "serveur : apparié à « ${r.nom} » ($adresse), utilisateur ${r.utilisateur}")
                     // Les favoris locaux versés au serveur, comme autant de gestes ; le fichier local reste, pour le détachement.
-                    val locaux = MesFavoris(this@ServeurActivity).charger()
+                    val locaux = MesRadios(this@ServeurActivity, MesRadios.LOCALE).charger()?.stations ?: emptyList()
                     for (s in locaux) journal.favoriAjouter(s)
                     if (locaux.isNotEmpty()) Log.i(Fichiers.JOURNAL, "serveur : ${locaux.size} favoris locaux versés au journal")
                     synchro.executer()

@@ -3,6 +3,14 @@
 Une entrée par chantier, la plus récente en tête. Le détail de chacun est
 dans `correctifs/`.
 
+## 2026-10-27 — 007 · Ranger sur le téléphone
+
+Les dossiers, pour les radios : par appui long, ranger une station dans un
+dossier, l'en retirer, la déplacer, monter et descendre ; créer, renommer,
+supprimer un dossier. Apparié, chaque action est un geste du journal ; sans
+serveur, la liste locale gagne des dossiers, mêmes menus. Les fichiers
+importés restent en lecture seule.
+
 ## 2026-10-27 — 006 · Renvoyer les favoris
 
 Le journal des gestes : chaque étoile ou retrait, apparié, est appliqué

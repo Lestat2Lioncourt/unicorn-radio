@@ -45,9 +45,19 @@ class Noeud(
     val stations: List<Station>,
     /** Le nom du fichier dont ce noeud est la racine, sinon `null`. */
     val fichier: String? = null,
-    /** La liste « Mes favoris » du téléphone. */
+    /** La liste « Mes favoris », celle qu'on modifie. */
     val mesFavoris: Boolean = false,
+    /** Le chemin complet d'un dossier, du premier niveau à lui-même ; `null` pour une racine. */
+    val chemin: List<String>? = null,
+    /** Un noeud de la liste qu'on modifie, favoris ou dossier à soi, par opposition à un fichier importé. */
+    val mien: Boolean = false,
 ) {
     val nombreDeStations: Int
         get() = stations.size + sousDossiers.sumOf { it.nombreDeStations }
+
+    /** Le même arbre, marqué comme étant à soi, dossiers compris. */
+    fun aMoi(): Noeud = Noeud(titre, sousDossiers.map { it.aMoi() }, stations, fichier, mesFavoris, chemin, mien = true)
+
+    /** Tous les dossiers de l'arbre, parents avant enfants, dans l'ordre d'affichage. */
+    fun tousLesDossiers(): List<Noeud> = sousDossiers.flatMap { listOf(it) + it.tousLesDossiers() }
 }

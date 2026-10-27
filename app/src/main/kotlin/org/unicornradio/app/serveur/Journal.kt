@@ -38,6 +38,38 @@ class Journal(contexte: Context) {
     fun favoriRetirer(uuid: String): JSONObject =
         ajouter("favori.retirer", JSONObject().put("station_uuid", uuid))
 
+    @Synchronized
+    fun favorisOrdonner(uuids: List<String>): JSONObject =
+        ajouter("favoris.ordonner", JSONObject().put("station_uuids", JSONArray(uuids)))
+
+    @Synchronized
+    fun dossierCreer(chemin: List<String>): JSONObject =
+        ajouter("dossier.creer", JSONObject().put("chemin", JSONArray(chemin)))
+
+    @Synchronized
+    fun dossierRenommer(chemin: List<String>, nom: String): JSONObject =
+        ajouter("dossier.renommer", JSONObject().put("chemin", JSONArray(chemin)).put("nom", nom))
+
+    @Synchronized
+    fun dossierSupprimer(chemin: List<String>): JSONObject =
+        ajouter("dossier.supprimer", JSONObject().put("chemin", JSONArray(chemin)))
+
+    @Synchronized
+    fun dossierAjouter(chemin: List<String>, station: Station): JSONObject =
+        ajouter("dossier.ajouter", JSONObject().put("chemin", JSONArray(chemin)).put("station", EcritureFichier.fiche(station, 0)))
+
+    @Synchronized
+    fun dossierRetirer(chemin: List<String>, uuid: String): JSONObject =
+        ajouter("dossier.retirer", JSONObject().put("chemin", JSONArray(chemin)).put("station_uuid", uuid))
+
+    @Synchronized
+    fun dossierDeplacer(chemin: List<String>, uuid: String, vers: List<String>): JSONObject =
+        ajouter("dossier.deplacer", JSONObject().put("chemin", JSONArray(chemin)).put("station_uuid", uuid).put("vers", JSONArray(vers)))
+
+    @Synchronized
+    fun dossierOrdonner(chemin: List<String>, uuids: List<String>): JSONObject =
+        ajouter("dossier.ordonner", JSONObject().put("chemin", JSONArray(chemin)).put("station_uuids", JSONArray(uuids)))
+
     /** Les gestes que le serveur a traités, acceptés, déjà vus ou refusés : sortis du journal. */
     @Synchronized
     fun retirer(ids: Collection<String>) {

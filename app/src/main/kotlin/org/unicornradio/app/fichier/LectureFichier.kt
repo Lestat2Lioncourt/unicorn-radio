@@ -70,6 +70,7 @@ object LectureFichier {
         val enfants = ArrayList<DossierBrut>()
         fun versNoeud(): Noeud = Noeud(
             titre = chemin.last(),
+            chemin = chemin,
             sousDossiers = enfants.sortedWith(compareBy({ it.ordre }, { it.chemin.last() })).map { it.versNoeud() },
             stations = stations,
         )

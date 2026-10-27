@@ -15,7 +15,9 @@ import android.view.View
 import android.view.inputmethod.InputMethodManager
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
+import android.text.InputType
 import android.widget.EditText
+import android.widget.FrameLayout
 import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.Spinner
@@ -45,7 +47,6 @@ import kotlinx.coroutines.withContext
 import org.unicornradio.app.annuaire.Annuaire
 import org.unicornradio.app.fichier.Fichiers
 import org.unicornradio.app.fichier.LectureFichier
-import org.unicornradio.app.fichier.MesFavoris
 import org.unicornradio.app.lecture.ServiceLecture
 import org.unicornradio.app.lecture.versElement
 import org.unicornradio.app.modele.Noeud
@@ -67,11 +68,16 @@ import java.util.Locale
 class MainActivity : AppCompatActivity() {
 
     private lateinit var fichiers: Fichiers
-    private lateinit var mesFavoris: MesFavoris
     private lateinit var serveur: Serveur
+    /** La copie du serveur, et la liste locale de qui n'a pas de serveur. */
     private lateinit var mesRadios: MesRadios
+    private lateinit var locale: MesRadios
     private lateinit var journal: Journal
     private lateinit var synchro: Synchro
+
+    /** La liste qu'on modifie : la copie du serveur, apparié, sinon la liste locale. */
+    private val maListe: MesRadios
+        get() = if (serveur.apparie) mesRadios else locale
     private lateinit var barre: MaterialToolbar
     private lateinit var liste: RecyclerView
     private lateinit var vide: View
@@ -140,9 +146,9 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         fichiers = Fichiers(this)
-        mesFavoris = MesFavoris(this)
         serveur = Serveur(this)
-        mesRadios = MesRadios(this)
+        mesRadios = MesRadios(this, MesRadios.COPIE)
+        locale = MesRadios(this, MesRadios.LOCALE)
         journal = Journal(this)
         synchro = Synchro(serveur, mesRadios, journal)
 
@@ -165,10 +171,10 @@ class MainActivity : AppCompatActivity() {
 
         adaptateur = ListeAdaptateur(
             surDossier = { pile.addLast(it); afficher() },
-            surDossierLong = { proposerDeRetirer(it) },
+            surDossierLong = { menuDossier(it) },
             surStation = { jouer(it) },
-            surStationLong = { proposerDeRetirerDesFavoris(it) },
-            estFavorite = { if (serveur.apparie) mesRadios.estFavorite(it.uuid) else mesFavoris.contient(it.uuid) },
+            surStationLong = { menuStation(it) },
+            estFavorite = { maListe.estFavorite(it.uuid) },
             surEtoile = { etoiler(it) },
         )
         liste.layoutManager = LinearLayoutManager(this)
@@ -334,28 +340,29 @@ class MainActivity : AppCompatActivity() {
         val chemin = pile.map { it.titre }
         lifecycleScope.launch {
             val racines = withContext(Dispatchers.IO) {
+                val mienne = maListe.charger()
+                val liste = ArrayList<Noeud>()
                 if (serveur.apparie) {
                     // Apparié : la copie du serveur tient lieu de tout, ses favoris en tête, puis ses dossiers.
-                    val copie = mesRadios.charger()
-                    if (copie == null) emptyList() else listOf(
-                        Noeud(
-                            getString(R.string.app_name),
-                            listOf(Noeud(getString(R.string.mes_favoris), emptyList(), copie.stations, mesFavoris = true)) + copie.sousDossiers,
-                            emptyList(),
-                        ),
-                    )
+                    if (mienne != null) {
+                        liste += Noeud(getString(R.string.mes_favoris), emptyList(), mienne.stations, mesFavoris = true, mien = true)
+                        liste += mienne.sousDossiers.map { it.aMoi() }
+                    }
                 } else {
-                    val favoris = mesFavoris.charger()
-                    val liste = ArrayList<Noeud>()
-                    if (favoris.isNotEmpty()) liste += Noeud(getString(R.string.mes_favoris), emptyList(), favoris, mesFavoris = true)
+                    // La liste locale, ses favoris s'il y en a et ses dossiers, puis les fichiers importés.
+                    if (mienne != null && mienne.stations.isNotEmpty()) {
+                        liste += Noeud(getString(R.string.mes_favoris), emptyList(), mienne.stations, mesFavoris = true, mien = true)
+                    }
+                    if (mienne != null) liste += mienne.sousDossiers.map { it.aMoi() }
                     liste += fichiers.charger()
-                    liste
                 }
+                liste
             }
             pile.clear()
-            when (racines.size) {
-                0 -> Unit
-                1 -> pile.addLast(racines[0])
+            when {
+                racines.isEmpty() -> Unit
+                // Un seul fichier importé est la racine lui-même ; ma liste est toujours sous le nom de l'application.
+                racines.size == 1 && !racines[0].mien -> pile.addLast(racines[0])
                 else -> pile.addLast(Noeud(getString(R.string.app_name), racines, emptyList()))
             }
             if (versFichier != null) {
@@ -389,6 +396,39 @@ class MainActivity : AppCompatActivity() {
                 Toast.makeText(this@MainActivity, getString(R.string.fichier_illisible, raison), Toast.LENGTH_LONG).show()
             }
         }
+    }
+
+    /** L'appui long sur un dossier : le mien, son menu ; un fichier importé, le retirer ; le reste, rien. */
+    private fun menuDossier(noeud: Noeud): Boolean {
+        val chemin = noeud.chemin
+        if (!noeud.mien || chemin == null) return proposerDeRetirer(noeud)
+        val actions = listOf<Pair<String, () -> Unit>>(
+            getString(R.string.nouveau_sous_dossier) to {
+                demanderUnNom(R.string.nouveau_sous_dossier) { nom ->
+                    agir(surJournal = { it.dossierCreer(chemin + nom) }) { it.creerDossier(chemin + nom) }
+                }
+            },
+            getString(R.string.renommer) to {
+                demanderUnNom(R.string.renommer, noeud.titre) { nom ->
+                    if (nom != noeud.titre) agir(surJournal = { it.dossierRenommer(chemin, nom) }) { it.renommerDossier(chemin, nom) }
+                }
+            },
+            getString(R.string.supprimer) to {
+                MaterialAlertDialogBuilder(this)
+                    .setTitle(R.string.supprimer_dossier_titre)
+                    .setMessage(getString(R.string.supprimer_dossier_texte, noeud.titre))
+                    .setNegativeButton(R.string.annuler, null)
+                    .setPositiveButton(R.string.supprimer) { _, _ ->
+                        agir(surJournal = { it.dossierSupprimer(chemin) }) { it.supprimerDossier(chemin) }
+                    }
+                    .show()
+            },
+        )
+        MaterialAlertDialogBuilder(this)
+            .setTitle(noeud.titre)
+            .setItems(actions.map { it.first }.toTypedArray()) { _, i -> actions[i].second() }
+            .show()
+        return true
     }
 
     private fun proposerDeRetirer(noeud: Noeud): Boolean {
@@ -546,44 +586,129 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    /** Un appui long sur une station de « Mes favoris » propose de la retirer, sans repasser par l'annuaire. */
-    private fun proposerDeRetirerDesFavoris(station: Station): Boolean {
-        if (modeRecherche || pile.lastOrNull()?.mesFavoris != true) return false
+    // ---- Les gestes sur ma liste ----
+
+    /**
+     * Un geste : appliqué à ma liste sur place, noté au journal si on est
+     * apparié, l'écran relu, et le serveur prévenu dans la foulée s'il répond.
+     */
+    private fun agir(message: String? = null, apres: (() -> Unit)? = null, surJournal: (Journal) -> Unit, surListe: (MesRadios) -> Unit) {
+        lifecycleScope.launch {
+            withContext(Dispatchers.IO) {
+                surListe(maListe)
+                if (serveur.apparie) surJournal(journal)
+            }
+            if (message != null) Toast.makeText(this@MainActivity, message, Toast.LENGTH_SHORT).show()
+            apres?.invoke()
+            charger()
+            if (serveur.apparie) tirer()
+        }
+    }
+
+    /** Le noeud où l'on est, s'il est à moi : « Mes favoris » ou un de mes dossiers. */
+    private val noeudAMoi: Noeud?
+        get() = if (modeRecherche) null else pile.lastOrNull()?.takeIf { it.mien }
+
+    /** L'étoile : la station entre dans « Mes favoris » ou en sort ; la racine suit. */
+    private fun etoiler(station: Station) {
+        val etait = maListe.estFavorite(station.uuid)
+        agir(
+            message = getString(if (etait) R.string.favori_retire else R.string.favori_ajoute, station.nom),
+            apres = { adaptateur.rafraichir(station) },
+            surJournal = { if (etait) it.favoriRetirer(station.uuid) else it.favoriAjouter(station) },
+        ) { if (etait) it.retirerFavori(station.uuid) else it.ajouterFavori(station) }
+    }
+
+    /** L'appui long sur une station : les favoris, le rangement, et dans ma liste, le retrait et l'ordre. */
+    private fun menuStation(station: Station): Boolean {
+        val ici = noeudAMoi
+        val dossier = ici?.chemin
+        val favorite = maListe.estFavorite(station.uuid)
+        val actions = ArrayList<Pair<String, () -> Unit>>()
+        actions += getString(if (favorite) R.string.retirer_des_favoris else R.string.ajouter_aux_favoris) to { etoiler(station) }
+        actions += getString(R.string.ranger_dans) to {
+            choisirUnDossier(R.string.ranger_dans, exclure = dossier) { chemin ->
+                agir(
+                    message = getString(R.string.rangee_dans, chemin.last(), station.nom),
+                    surJournal = { it.dossierAjouter(chemin, station) },
+                ) { it.ajouterAuDossier(chemin, station) }
+            }
+        }
+        if (dossier != null) {
+            actions += getString(R.string.deplacer_vers) to {
+                choisirUnDossier(R.string.deplacer_vers, exclure = dossier) { vers ->
+                    agir(
+                        message = getString(R.string.rangee_dans, vers.last(), station.nom),
+                        surJournal = { it.dossierDeplacer(dossier, station.uuid, vers) },
+                    ) { it.deplacer(dossier, station.uuid, vers) }
+                }
+            }
+            actions += getString(R.string.retirer_du_dossier) to {
+                agir(surJournal = { it.dossierRetirer(dossier, station.uuid) }) { it.retirerDuDossier(dossier, station.uuid) }
+            }
+        }
+        if (ici != null && (ici.mesFavoris || dossier != null)) {
+            val i = ici.stations.indexOfFirst { it.uuid == station.uuid }
+            if (i > 0) actions += getString(R.string.monter) to { decaler(ici, i, i - 1) }
+            if (i in 0 until ici.stations.size - 1) actions += getString(R.string.descendre) to { decaler(ici, i, i + 1) }
+        }
         MaterialAlertDialogBuilder(this)
-            .setTitle(R.string.retirer_des_favoris)
-            .setMessage(station.nom)
-            .setNegativeButton(R.string.annuler, null)
-            .setPositiveButton(R.string.retirer) { _, _ -> etoiler(station) }
+            .setTitle(station.nom)
+            .setItems(actions.map { it.first }.toTypedArray()) { _, i -> actions[i].second() }
             .show()
         return true
     }
 
-    /**
-     * L'étoile : la station entre dans « Mes favoris » ou en sort ; la racine
-     * suit. Apparié, c'est un geste : appliqué à la copie tout de suite, noté
-     * au journal, et envoyé au serveur dans la foulée s'il répond.
-     */
-    private fun etoiler(station: Station) {
-        lifecycleScope.launch {
-            val favorite = withContext(Dispatchers.IO) {
-                if (serveur.apparie) {
-                    val etait = mesRadios.estFavorite(station.uuid)
-                    if (etait) { journal.favoriRetirer(station.uuid); mesRadios.retirerFavori(station.uuid) }
-                    else { journal.favoriAjouter(station); mesRadios.ajouterFavori(station) }
-                    !etait
-                } else {
-                    mesFavoris.basculer(station)
-                }
-            }
-            Toast.makeText(
-                this@MainActivity,
-                getString(if (favorite) R.string.favori_ajoute else R.string.favori_retire, station.nom),
-                Toast.LENGTH_SHORT,
-            ).show()
-            adaptateur.rafraichir(station)
-            charger()
-            if (serveur.apparie) tirer()
+    /** La station à la place `de` passe à la place `vers` : un geste « ordonner » sur toute la liste. */
+    private fun decaler(noeud: Noeud, de: Int, vers: Int) {
+        val uuids = noeud.stations.map { it.uuid }.toMutableList()
+        uuids.add(vers, uuids.removeAt(de))
+        val chemin = noeud.chemin
+        if (chemin == null) {
+            agir(surJournal = { it.favorisOrdonner(uuids) }) { it.ordonnerFavoris(uuids) }
+        } else {
+            agir(surJournal = { it.dossierOrdonner(chemin, uuids) }) { it.ordonnerDossier(chemin, uuids) }
         }
+    }
+
+    /**
+     * Mes dossiers par leur chemin, « Musique / Jazz », et « Nouveau
+     * dossier… » en bas, créé dans le dossier où l'on est, sinon à la racine.
+     */
+    private fun choisirUnDossier(titre: Int, exclure: List<String>?, action: (List<String>) -> Unit) {
+        val dossiers = (maListe.charger()?.tousLesDossiers() ?: emptyList())
+            .filter { it.chemin != null && it.chemin != exclure }
+        val noms = dossiers.map { it.chemin!!.joinToString(" / ") } + getString(R.string.nouveau_dossier)
+        MaterialAlertDialogBuilder(this)
+            .setTitle(titre)
+            .setItems(noms.toTypedArray()) { _, i ->
+                if (i < dossiers.size) action(dossiers[i].chemin!!)
+                else demanderUnNom(R.string.nouveau_dossier) { nom -> action((noeudAMoi?.chemin ?: emptyList()) + nom) }
+            }
+            .setNegativeButton(R.string.annuler, null)
+            .show()
+    }
+
+    /** Un nom de dossier, dans une boîte : vide ou avec une barre oblique, rien ne se passe. */
+    private fun demanderUnNom(titre: Int, initial: String = "", action: (String) -> Unit) {
+        val champ = EditText(this).apply {
+            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_CAP_SENTENCES
+            hint = getString(R.string.nom_du_dossier)
+            setText(initial)
+            setSelection(text.length)
+        }
+        val marge = (20 * resources.displayMetrics.density).toInt()
+        val cadre = FrameLayout(this).apply { setPadding(marge, 0, marge, 0); addView(champ) }
+        MaterialAlertDialogBuilder(this)
+            .setTitle(titre)
+            .setView(cadre)
+            .setNegativeButton(R.string.annuler, null)
+            .setPositiveButton(R.string.valider) { _, _ ->
+                val nom = champ.text.toString().trim()
+                if (nom.isNotEmpty() && !nom.contains('/')) action(nom)
+            }
+            .show()
+        champ.requestFocus()
     }
 
     // ---- La lecture ----

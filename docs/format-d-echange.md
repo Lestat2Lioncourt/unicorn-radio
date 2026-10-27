@@ -295,6 +295,7 @@ Chaque geste porte :
 | `dossier.retirer` | `chemin`, `station_uuid` | retire du dossier ; absent, rien |
 | `dossier.deplacer` | `chemin`, `station_uuid`, `vers` (chemin) | retire d'un dossier, ajoute à la fin de l'autre |
 | `dossier.ordonner` | `chemin`, `station_uuids` | comme `favoris.ordonner`, dans ce dossier |
+| `dossiers.ordonner` | `chemin` (du parent ; vide ou absent, la racine), `noms` (les noms des dossiers, dans l'ordre) | met dans cet ordre les dossiers qui sont là sous ce parent ; les autres suivent dans leur ordre d'avant ; parent inconnu, refusé |
 | `podcast.ajouter` | `podcast` (`flux`, `nom`, `auteur`, `image`) | ajoute à la fin des podcasts ; déjà là, rien, sa place est gardée |
 | `podcast.retirer` | `flux` | retire ; absent, rien |
 | `podcasts.ordonner` | `flux` (liste d'adresses) | met dans cet ordre ceux qui y sont ; les autres suivent |
@@ -304,6 +305,13 @@ l'ajoute à sa copie de l'annuaire s'il ne la connaît pas. Un geste refusé
 l'est seul, les autres passent. Au plus 2000 gestes par appel. Le champ
 `appareil` du corps n'est pas lu, c'est le jeton qui dit qui parle ;
 l'application l'écrit quand même.
+
+`dossiers.ordonner`, ajouté le 2026-10-27, est le seul geste sur les
+dossiers frères ; à la racine, `"chemin": []`. Exemple :
+
+```json
+{ "id": "…", "quand": "…", "type": "dossiers.ordonner", "chemin": ["Musique"], "noms": ["Jazz", "Rock"] }
+```
 
 Les podcasts suivis entrent dans la synchronisation depuis le 2026-10-27 :
 une liste plate, sans dossiers, l'adresse du flux pour clef, les mêmes
