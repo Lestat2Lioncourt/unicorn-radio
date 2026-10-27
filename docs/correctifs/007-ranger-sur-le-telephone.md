@@ -48,12 +48,20 @@ dossiers et les deux « ordonner », en plus des deux des favoris. Tous
 passent par la même fonction `agir` : appliqué à ma liste, noté au
 journal si apparié, l'écran relu, le serveur prévenu dans la foulée.
 
-**Pas dans ce chantier** : l'ordre des dossiers entre eux, que le contrat
-ne couvre pas (pas de geste pour ordonner des dossiers frères) ; le
-glisser-déposer ; l'écriture du fichier d'échange pour qui n'a pas de
-serveur, qui reste à part.
+**Pas dans ce chantier** : le glisser-déposer, et l'écriture du fichier
+d'échange pour qui n'a pas de serveur, qui reste à part.
 
 Version 0.7.0, code 8. Aucune dépendance ajoutée.
+
+## L'ordre des dossiers : 0.7.1
+
+Le 0.7.0 laissait de côté l'ordre des dossiers entre eux, que le contrat
+ne couvrait pas. Le serveur a ajouté le geste `dossiers.ordonner` le jour
+même : le chemin du parent, vide à la racine, et les noms des dossiers
+frères dans l'ordre. Le 0.7.1, code 9, le branche : « Monter » et
+« Descendre » dans le menu d'un de mes dossiers, parmi ses frères du
+niveau où l'on est, le geste avec tous les noms dans le nouvel ordre,
+appliqué sur place comme les autres, `ordre` réécrit.
 
 ## Fichiers
 
@@ -65,7 +73,7 @@ Version 0.7.0, code 8. Aucune dépendance ajoutée.
 
 ## Vérification
 
-À relancer : installer l'APK `pkg/unicorn-radio-0.7.0-debug.apk` par-dessus
+À relancer : installer l'APK `pkg/unicorn-radio-0.7.1-debug.apk` par-dessus
 l'ancien, apparié ; côté PC, la page radio ouverte.
 
 - Appui long sur une station des résultats → « Ranger dans… » → « Nouveau

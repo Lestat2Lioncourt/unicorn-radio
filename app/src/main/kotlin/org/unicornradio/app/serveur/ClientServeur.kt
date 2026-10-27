@@ -139,6 +139,30 @@ object ClientServeur {
         return ReponseGestes(o.optInt("acceptes"), o.optInt("deja_vus"), refuses)
     }
 
+    /** `GET /api/radio/podcasts/ecoutes?flux=` avec le jeton : où l'utilisateur en est de chaque épisode de ce flux, en secondes. */
+    fun ecoutes(adresse: String, jeton: String, flux: String): List<org.unicornradio.app.podcasts.Ecoute> {
+        val o = JSONObject(demander(adresse, "GET", "/api/radio/podcasts/ecoutes?flux=" + java.net.URLEncoder.encode(flux, "UTF-8"), jeton = jeton))
+        val liste = ArrayList<org.unicornradio.app.podcasts.Ecoute>()
+        for (guid in o.keys()) {
+            val e = o.optJSONObject(guid) ?: continue
+            liste += org.unicornradio.app.podcasts.Ecoute(
+                flux, guid,
+                position = e.optDouble("position", 0.0).toLong(),
+                duree = if (e.isNull("duree")) null else e.optDouble("duree").toLong(),
+                termine = e.optBoolean("termine") || e.optInt("termine") == 1,
+                le = e.optLong("le"),
+            )
+        }
+        return liste
+    }
+
+    /** `PUT /api/radio/podcasts/ecoutes` avec le jeton : une position d'écoute, le dernier écrit gagne. */
+    fun noterEcoute(adresse: String, jeton: String, e: org.unicornradio.app.podcasts.Ecoute) {
+        val corps = JSONObject().put("flux", e.flux).put("guid", e.guid).put("position", e.position)
+            .put("duree", e.duree ?: JSONObject.NULL).put("termine", e.termine)
+        demander(adresse, "PUT", "/api/radio/podcasts/ecoutes", corps = corps.toString(), jeton = jeton)
+    }
+
     /** `DELETE /api/radio/appariement` avec le jeton : le téléphone se retire. */
     fun detacher(adresse: String, jeton: String) {
         demander(adresse, "DELETE", "/api/radio/appariement", jeton = jeton)

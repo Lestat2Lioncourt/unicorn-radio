@@ -2,6 +2,8 @@ package org.unicornradio.app.lecture
 
 import android.app.PendingIntent
 import android.content.Intent
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
@@ -19,6 +21,12 @@ import org.unicornradio.app.BuildConfig
 import org.unicornradio.app.MainActivity
 import org.unicornradio.app.annuaire.Annuaire
 import org.unicornradio.app.fichier.Fichiers
+import org.unicornradio.app.podcasts.CLEF_DUREE
+import org.unicornradio.app.podcasts.CLEF_FLUX
+import org.unicornradio.app.podcasts.CLEF_GUID
+import org.unicornradio.app.podcasts.Ecoutes
+import org.unicornradio.app.podcasts.estUnEpisode
+import org.unicornradio.app.serveur.Serveur
 
 /**
  * Le lecteur, en arrière-plan : un ExoPlayer dans une session Media3. La
@@ -52,6 +60,7 @@ class ServiceLecture : MediaSessionService() {
             .setWakeMode(C.WAKE_MODE_NETWORK)
             .build()
         lecteur.addListener(Journal)
+        lecteur.addListener(suivi)
 
         val ouvrir = PendingIntent.getActivity(
             this, 0, Intent(this, MainActivity::class.java),
@@ -63,12 +72,82 @@ class ServiceLecture : MediaSessionService() {
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaSession? = session
 
     override fun onDestroy() {
+        noterLaPosition()
+        main.removeCallbacks(toutesLesDixSecondes)
         session?.run {
             player.release()
             release()
         }
         session = null
         super.onDestroy()
+    }
+
+    // ---- Où l'on en est d'un épisode ----
+
+    private val main = Handler(Looper.getMainLooper())
+    private val ecoutes by lazy { Ecoutes(this) }
+    private val serveur by lazy { Serveur(this) }
+    private val toutesLesDixSecondes = object : Runnable {
+        override fun run() {
+            noterLaPosition()
+            main.postDelayed(this, 10_000)
+        }
+    }
+
+    /**
+     * La position d'un épisode, écrite toutes les dix secondes pendant la
+     * lecture, à la pause, à l'arrêt, au changement d'élément et à la fin ;
+     * terminé à moins d'une minute de la fin. Poussée au serveur dans la
+     * foulée s'il répond, gardée sinon.
+     */
+    private val suivi = object : Player.Listener {
+        override fun onIsPlayingChanged(isPlaying: Boolean) {
+            main.removeCallbacks(toutesLesDixSecondes)
+            if (isPlaying) main.postDelayed(toutesLesDixSecondes, 10_000) else noterLaPosition()
+        }
+
+        override fun onPositionDiscontinuity(ancienne: Player.PositionInfo, nouvelle: Player.PositionInfo, reason: Int) {
+            val avant = ancienne.mediaItem ?: return
+            if (ancienne.mediaItemIndex != nouvelle.mediaItemIndex && avant.estUnEpisode) {
+                noter(avant, ancienne.positionMs, reason == Player.DISCONTINUITY_REASON_AUTO_TRANSITION)
+            }
+        }
+
+        override fun onPlaybackStateChanged(playbackState: Int) {
+            if (playbackState == Player.STATE_ENDED) {
+                val p = session?.player ?: return
+                val item = p.currentMediaItem ?: return
+                if (item.estUnEpisode) noter(item, p.duration.takeIf { it != C.TIME_UNSET } ?: p.currentPosition, fini = true)
+            }
+        }
+    }
+
+    private fun noterLaPosition() {
+        val p = session?.player ?: return
+        val item = p.currentMediaItem ?: return
+        if (!item.estUnEpisode || p.playbackState == Player.STATE_IDLE) return
+        noter(item, p.currentPosition, fini = false, dureeMs = p.duration)
+    }
+
+    private fun noter(item: MediaItem, positionMs: Long, fini: Boolean, dureeMs: Long = C.TIME_UNSET) {
+        val extras = item.mediaMetadata.extras ?: return
+        val flux = extras.getString(CLEF_FLUX) ?: return
+        val guid = extras.getString(CLEF_GUID) ?: return
+        val duree = when {
+            dureeMs != C.TIME_UNSET && dureeMs > 0 -> dureeMs / 1000
+            extras.getLong(CLEF_DUREE, -1L) > 0 -> extras.getLong(CLEF_DUREE)
+            else -> null
+        }
+        val position = (positionMs / 1000).coerceAtLeast(0)
+        val termine = fini || (duree != null && position >= duree - 60)
+        Thread {
+            try {
+                ecoutes.noter(flux, guid, position, duree, termine)
+                ecoutes.pousserEnAttente(serveur)
+            } catch (e: Exception) {
+                Log.w(Fichiers.JOURNAL, "écoutes : position gardée, pas poussée : ${e.message}")
+            }
+        }.start()
     }
 
     /**
@@ -81,6 +160,10 @@ class ServiceLecture : MediaSessionService() {
         override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
             if (mediaItem == null) return
             val uri = mediaItem.localConfiguration?.uri
+            if (mediaItem.estUnEpisode) {
+                Log.i(Fichiers.JOURNAL, "lecture de l'épisode « ${mediaItem.mediaMetadata.title} » $uri")
+                return
+            }
             Log.i(Fichiers.JOURNAL, "lecture « ${mediaItem.mediaMetadata.station} » $uri")
             val uuid = mediaItem.mediaId
             Thread {

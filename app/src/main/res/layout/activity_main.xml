@@ -17,6 +17,127 @@
         app:subtitleTextAppearance="?attr/textAppearanceLabelMedium"
         app:titleMarginStart="12dp" />
 
+    <!-- Les deux onglets, comme sur le bureau : Radio, Podcasts. -->
+    <com.google.android.material.button.MaterialButtonToggleGroup
+        android:id="@+id/onglets"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="4dp"
+        app:checkedButton="@id/ongletRadio"
+        app:selectionRequired="true"
+        app:singleSelection="true">
+
+        <Button
+            android:id="@+id/ongletRadio"
+            style="?attr/materialButtonOutlinedStyle"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/onglet_radio" />
+
+        <Button
+            android:id="@+id/ongletPodcasts"
+            style="?attr/materialButtonOutlinedStyle"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/onglet_podcasts" />
+    </com.google.android.material.button.MaterialButtonToggleGroup>
+
+    <!-- L'onglet Podcasts : la recherche dans l'annuaire, puis l'état. -->
+    <LinearLayout
+        android:id="@+id/podcasts"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:paddingBottom="8dp"
+        android:visibility="gone">
+
+        <EditText
+            android:id="@+id/podcastsNom"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/chercher_des_podcasts"
+            android:imeOptions="actionSearch"
+            android:importantForAutofill="no"
+            android:inputType="text|textNoSuggestions"
+            android:maxLines="1" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/podcastsEtat"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:textAppearance="?attr/textAppearanceBodyMedium"
+                android:textColor="?attr/colorOnSurfaceVariant" />
+
+            <Button
+                android:id="@+id/podcastsColler"
+                style="@style/Widget.Material3.Button.TextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/coller_adresse" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- Un podcast ouvert : la recherche dans ses épisodes. -->
+    <LinearLayout
+        android:id="@+id/episodesPanneau"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:paddingBottom="4dp"
+        android:visibility="gone">
+
+        <!-- Le bouton à bascule à gauche, qui déplie ou replie tous les jours, puis le champ de recherche. -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <ImageButton
+                android:id="@+id/episodesDeplier"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/tout_deplier"
+                android:src="@drawable/ic_deplier"
+                app:tint="?attr/colorOnSurfaceVariant" />
+
+            <EditText
+                android:id="@+id/episodesFiltre"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:hint="@string/chercher_dans_les_episodes"
+                android:imeOptions="actionSearch"
+                android:importantForAutofill="no"
+                android:inputType="text|textNoSuggestions"
+                android:maxLines="1" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/episodesEtat"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textAppearance="?attr/textAppearanceBodyMedium"
+            android:textColor="?attr/colorOnSurfaceVariant"
+            android:visibility="gone" />
+    </LinearLayout>
+
     <!-- Le mode recherche : le nom, puis le pays et le style, puis l'état. -->
     <LinearLayout
         android:id="@+id/recherche"
@@ -187,5 +308,52 @@
             android:contentDescription="@string/lire"
             android:src="@drawable/ic_lecture"
             app:tint="?attr/colorPrimary" />
+    </LinearLayout>
+
+    <!-- Sous la ligne de lecture, pour un épisode : reculer, la barre, le temps restant, avancer. -->
+    <LinearLayout
+        android:id="@+id/lectureAvancement"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="?attr/colorSurfaceContainerHigh"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="4dp"
+        android:paddingEnd="4dp"
+        android:paddingBottom="6dp"
+        android:visibility="gone">
+
+        <ImageButton
+            android:id="@+id/lectureReculer"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/reculer"
+            android:src="@drawable/ic_reculer"
+            app:tint="?attr/colorOnSurfaceVariant" />
+
+        <SeekBar
+            android:id="@+id/lectureBarre"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1" />
+
+        <TextView
+            android:id="@+id/lectureReste"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:minWidth="56dp"
+            android:textAlignment="viewEnd"
+            android:textAppearance="?attr/textAppearanceLabelMedium"
+            android:textColor="?attr/colorOnSurfaceVariant" />
+
+        <ImageButton
+            android:id="@+id/lectureAvancer"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/avancer"
+            android:src="@drawable/ic_avancer"
+            app:tint="?attr/colorOnSurfaceVariant" />
     </LinearLayout>
 </LinearLayout>

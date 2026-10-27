@@ -9,6 +9,7 @@ import org.unicornradio.app.fichier.Fichiers
 import org.unicornradio.app.fichier.LectureFichier
 import org.unicornradio.app.modele.Noeud
 import org.unicornradio.app.modele.Station
+import org.unicornradio.app.podcasts.Podcast
 import java.io.File
 
 /**
@@ -26,6 +27,7 @@ class MesRadios(private val contexte: Context, private val nom: String) {
 
     private var racine: Noeud? = null
     private var favorisUuid: Set<String>? = null
+    private var podcastsFlux: Set<String>? = null
 
     val existe: Boolean
         get() = fichier.exists()
@@ -42,7 +44,14 @@ class MesRadios(private val contexte: Context, private val nom: String) {
         }
         racine = lu
         favorisUuid = lu?.stations?.map { it.uuid }?.toSet() ?: emptySet()
+        podcastsFlux = lu?.podcasts?.map { it.flux }?.toSet() ?: emptySet()
         return lu
+    }
+
+    @Synchronized
+    fun estSuivi(flux: String): Boolean {
+        charger()
+        return podcastsFlux?.contains(flux) == true
     }
 
     @Synchronized
@@ -151,11 +160,61 @@ class MesRadios(private val contexte: Context, private val nom: String) {
         if (i >= 0) dossiers.getJSONObject(i).let { it.put("stations", it.stationsDe().ordonnee(uuids)) }
     }
 
+    /** Les dossiers frères sous ce parent (vide, la racine) dans cet ordre, les autres à la suite ; `ordre` réécrit. */
+    @Synchronized
+    fun ordonnerDossiers(parent: List<String>, noms: List<String>) = modifier { s ->
+        val dossiers = s.dossiers()
+        val rang = noms.withIndex().associate { it.value to it.index }
+        val freres = (0 until dossiers.length()).mapNotNull { i ->
+            val d = dossiers.optJSONObject(i) ?: return@mapNotNull null
+            val c = d.cheminDe() ?: return@mapNotNull null
+            if (c.size == parent.size + 1 && c.dropLast(1) == parent) d to d.optInt("ordre", i) else null
+        }
+        val tries = freres.withIndex().sortedWith(
+            compareBy({ rang[it.value.first.cheminDe()!!.last()] ?: Int.MAX_VALUE }, { it.value.second }, { it.index }),
+        )
+        tries.forEachIndexed { i, f -> f.value.first.put("ordre", i) }
+    }
+
+    // ---- Les podcasts ----
+
+    /** À la fin des podcasts suivis ; déjà là, rien, sa place est gardée. */
+    @Synchronized
+    fun ajouterPodcast(p: Podcast) = modifier { s ->
+        val liste = s.podcastsJson()
+        if (liste.indexDeFlux(p.flux) < 0) {
+            liste.put(
+                JSONObject().put("flux", p.flux).put("nom", p.nom)
+                    .put("auteur", p.auteur ?: JSONObject.NULL).put("image", p.image ?: JSONObject.NULL)
+                    .put("ordre", liste.length()),
+            )
+        }
+    }
+
+    /** Retiré des podcasts suivis ; absent, rien. */
+    @Synchronized
+    fun retirerPodcast(flux: String) = modifier { s ->
+        val liste = s.podcastsJson()
+        for (i in liste.length() - 1 downTo 0) if (liste.optJSONObject(i)?.optString("flux") == flux) liste.remove(i)
+    }
+
+    /** Dans cet ordre ceux qui y sont ; les autres suivent. */
+    @Synchronized
+    fun ordonnerPodcasts(fluxs: List<String>) = modifier { s -> s.put("podcasts", s.podcastsJson().ordonnee(fluxs, "flux")) }
+
+    private fun JSONObject.podcastsJson(): JSONArray = optJSONArray("podcasts") ?: JSONArray().also { put("podcasts", it) }
+
+    private fun JSONArray.indexDeFlux(flux: String): Int {
+        for (i in 0 until length()) if (optJSONObject(i)?.optString("flux") == flux) return i
+        return -1
+    }
+
     // ---- Le fichier ----
 
     private fun oublier() {
         racine = null
         favorisUuid = null
+        podcastsFlux = null
     }
 
     /** La section lue, modifiée, réécrite ; sans fichier, une section vide pour commencer. */
@@ -186,11 +245,11 @@ class MesRadios(private val contexte: Context, private val nom: String) {
         for (i in length() - 1 downTo 0) if (optJSONObject(i)?.optString("station_uuid") == uuid) remove(i)
     }
 
-    /** Celles de la liste dans cet ordre, puis les autres dans leur ordre d'avant, `ordre` réécrit. */
-    private fun JSONArray.ordonnee(uuids: List<String>): JSONArray {
+    /** Ceux de la liste dans cet ordre, puis les autres dans leur ordre d'avant, `ordre` réécrit ; la clef dit quel champ compare. */
+    private fun JSONArray.ordonnee(clefs: List<String>, clef: String = "station_uuid"): JSONArray {
         val toutes = (0 until length()).mapNotNull { optJSONObject(it) }
-        val rang = uuids.withIndex().associate { it.value to it.index }
-        val triees = toutes.withIndex().sortedWith(compareBy({ rang[it.value.optString("station_uuid")] ?: Int.MAX_VALUE }, { it.index })).map { it.value }
+        val rang = clefs.withIndex().associate { it.value to it.index }
+        val triees = toutes.withIndex().sortedWith(compareBy({ rang[it.value.optString(clef)] ?: Int.MAX_VALUE }, { it.index })).map { it.value }
         return JSONArray().apply { triees.forEachIndexed { i, o -> put(o.put("ordre", i)) } }
     }
 

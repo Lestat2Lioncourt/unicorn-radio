@@ -4,6 +4,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 import org.unicornradio.app.modele.Noeud
 import org.unicornradio.app.modele.Station
+import org.unicornradio.app.podcasts.Podcast
 
 /**
  * Lit un fichier d'échange, selon `docs/format-d-echange.md` : le fichier de
@@ -33,7 +34,26 @@ object LectureFichier {
 
         val favoris = stations(radio.optJSONArray("favoris"))
         val dossiers = dossiers(radio.optJSONArray("dossiers"))
-        return Noeud(titre = nom, sousDossiers = dossiers, stations = favoris, fichier = nom)
+        val podcasts = podcasts(radio.optJSONArray("podcasts"))
+        return Noeud(titre = nom, sousDossiers = dossiers, stations = favoris, fichier = nom, podcasts = podcasts)
+    }
+
+    /** Les podcasts suivis, dans l'ordre ; une ligne sans adresse de flux est passée. */
+    private fun podcasts(tableau: JSONArray?): List<Podcast> {
+        if (tableau == null) return emptyList()
+        val liste = ArrayList<Pair<Int, Podcast>>(tableau.length())
+        for (i in 0 until tableau.length()) {
+            val o = tableau.optJSONObject(i) ?: continue
+            val flux = o.chaine("flux") ?: continue
+            liste += o.optInt("ordre", i) to Podcast(
+                flux = flux,
+                nom = o.chaine("nom") ?: flux,
+                auteur = o.chaine("auteur"),
+                image = o.chaine("image"),
+                nbEpisodes = null,
+            )
+        }
+        return liste.sortedBy { it.first }.map { it.second }
     }
 
     /** Les stations d'une liste, dans l'ordre ; une ligne sans identifiant ou sans adresse est passée. */

@@ -67,6 +67,26 @@ class Journal(contexte: Context) {
         ajouter("dossier.deplacer", JSONObject().put("chemin", JSONArray(chemin)).put("station_uuid", uuid).put("vers", JSONArray(vers)))
 
     @Synchronized
+    fun podcastAjouter(p: org.unicornradio.app.podcasts.Podcast): JSONObject = ajouter(
+        "podcast.ajouter",
+        JSONObject().put(
+            "podcast",
+            JSONObject().put("flux", p.flux).put("nom", p.nom)
+                .put("auteur", p.auteur ?: JSONObject.NULL).put("image", p.image ?: JSONObject.NULL),
+        ),
+    )
+
+    @Synchronized
+    fun podcastRetirer(flux: String): JSONObject = ajouter("podcast.retirer", JSONObject().put("flux", flux))
+
+    @Synchronized
+    fun podcastsOrdonner(fluxs: List<String>): JSONObject = ajouter("podcasts.ordonner", JSONObject().put("flux", JSONArray(fluxs)))
+
+    @Synchronized
+    fun dossiersOrdonner(parent: List<String>, noms: List<String>): JSONObject =
+        ajouter("dossiers.ordonner", JSONObject().put("chemin", JSONArray(parent)).put("noms", JSONArray(noms)))
+
+    @Synchronized
     fun dossierOrdonner(chemin: List<String>, uuids: List<String>): JSONObject =
         ajouter("dossier.ordonner", JSONObject().put("chemin", JSONArray(chemin)).put("station_uuids", JSONArray(uuids)))
 

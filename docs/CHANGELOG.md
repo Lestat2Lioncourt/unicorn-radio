@@ -3,6 +3,25 @@
 Une entrée par chantier, la plus récente en tête. Le détail de chacun est
 dans `correctifs/`.
 
+## 2026-10-27 — 009 · Mes podcasts, et les épisodes par date
+
+Le deuxième palier des podcasts : la liste suivie du serveur sous l'onglet
+Podcasts, avec le dernier épisode de chacun ; l'étoile pour suivre ou ne
+plus suivre, monter et descendre, chacun un geste du journal ; le collage
+d'une adresse de flux. Et les épisodes présentés par date, chaque date
+repliable, avec un bouton pour tout déplier ou tout replier et une
+recherche dans les épisodes, comme sur le bureau le même jour.
+
+## 2026-10-27 — 008 · Les podcasts : chercher et écouter
+
+Deux onglets en tête, Radio et Podcasts, comme sur le bureau. L'onglet
+Podcasts cherche dans l'annuaire d'Apple, ouvre un podcast en lisant son
+flux RSS sur le téléphone, et joue ses épisodes avec barre d'avancement,
+temps restant, quinze secondes en arrière et en avant, et la reprise où
+l'on en était, gardée sur le téléphone et, apparié, partagée avec le PC.
+Premier des quatre paliers ; « Mes podcasts », la file d'écoute et le
+téléchargement suivent.
+
 ## 2026-10-27 — 007 · Ranger sur le téléphone
 
 Les dossiers, pour les radios : par appui long, ranger une station dans un

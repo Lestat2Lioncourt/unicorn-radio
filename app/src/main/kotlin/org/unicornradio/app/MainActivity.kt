@@ -20,6 +20,7 @@ import android.widget.EditText
 import android.widget.FrameLayout
 import android.widget.ImageButton
 import android.widget.ImageView
+import android.widget.SeekBar
 import android.widget.Spinner
 import android.widget.TextView
 import android.widget.Toast
@@ -27,6 +28,7 @@ import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
+import androidx.appcompat.widget.TooltipCompat
 import androidx.core.os.LocaleListCompat
 import androidx.core.widget.doAfterTextChanged
 import androidx.lifecycle.lifecycleScope
@@ -38,6 +40,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import coil.load
 import com.google.android.material.appbar.MaterialToolbar
+import com.google.android.material.button.MaterialButtonToggleGroup
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.common.util.concurrent.ListenableFuture
 import com.google.common.util.concurrent.MoreExecutors
@@ -51,6 +54,15 @@ import org.unicornradio.app.lecture.ServiceLecture
 import org.unicornradio.app.lecture.versElement
 import org.unicornradio.app.modele.Noeud
 import org.unicornradio.app.modele.Station
+import org.unicornradio.app.podcasts.AnnuairePodcasts
+import org.unicornradio.app.podcasts.Ecoute
+import org.unicornradio.app.podcasts.Ecoutes
+import org.unicornradio.app.podcasts.Episode
+import org.unicornradio.app.podcasts.Flux
+import org.unicornradio.app.podcasts.Podcast
+import org.unicornradio.app.podcasts.estUnEpisode
+import org.unicornradio.app.podcasts.formaterDuree
+import org.unicornradio.app.podcasts.versElement
 import org.unicornradio.app.serveur.ClientServeur
 import org.unicornradio.app.serveur.Journal
 import org.unicornradio.app.serveur.MesRadios
@@ -94,6 +106,14 @@ class MainActivity : AppCompatActivity() {
     private lateinit var recherchePays: Spinner
     private lateinit var rechercheStyle: Spinner
     private lateinit var rechercheEtat: TextView
+    private lateinit var onglets: MaterialButtonToggleGroup
+    private lateinit var podcastsPanneau: View
+    private lateinit var podcastsNom: EditText
+    private lateinit var podcastsEtat: TextView
+    private lateinit var lectureAvancement: View
+    private lateinit var lectureBarre: SeekBar
+    private lateinit var lectureReste: TextView
+    private lateinit var ecoutes: Ecoutes
     private lateinit var adaptateur: ListeAdaptateur
 
     /** Le chemin parcouru, la racine en premier. Vide tant qu'aucun fichier n'est chargé. */
@@ -109,6 +129,42 @@ class MainActivity : AppCompatActivity() {
     private val minuterie = Handler(Looper.getMainLooper())
     private val lancer = Runnable { chercher() }
 
+    // L'onglet Podcasts : la recherche dans l'annuaire, le podcast ouvert et ses épisodes, où l'on en est de chacun.
+    private enum class Onglet { RADIO, PODCASTS }
+    private var onglet = Onglet.RADIO
+    private var podcastsResultats: List<Podcast> = emptyList()
+    private var podcastOuvert: Podcast? = null
+    private var episodes: List<Episode> = emptyList()
+    private var ecoutesDuPodcast: Map<String, Ecoute> = emptyMap()
+    private var generationPodcasts = 0
+    private val lancerPodcasts = Runnable { chercherDesPodcasts() }
+    private var barreTenue = false
+    /**
+     * Les plis des jours du podcast ouvert, rien n'est gardé d'un podcast à
+     * l'autre. Hors recherche : tout replié à l'ouverture, « tout déplier »
+     * retient le choix le temps du podcast, et `exceptions` liste les jours
+     * pliés ou dépliés à la main contre ce choix. Pendant une recherche, les
+     * jours trouvés sont dépliés, et `plisDeRecherche` ceux repliés là, le
+     * temps de la recherche seulement.
+     */
+    private var toutDeplie = false
+    private val exceptions = HashSet<String>()
+    private val plisDeRecherche = HashSet<String>()
+    private var enRecherche = false
+    private lateinit var episodesPanneau: View
+    private lateinit var episodesDeplier: ImageButton
+    private lateinit var episodesFiltre: EditText
+    private lateinit var episodesEtat: TextView
+    /** Pour « Mes podcasts » : le dernier épisode par flux, `null` quand le flux ne répond pas ; lu en arrière-plan. */
+    private val derniersEpisodes = HashMap<String, String?>()
+    private val derniersEnCours = HashSet<String>()
+    private val avancement = object : Runnable {
+        override fun run() {
+            rafraichirAvancement()
+            minuterie.postDelayed(this, 1_000)
+        }
+    }
+
     // Le serveur apparié : un tirage à la fois, et la barre dit s'il ne répond pas, après deux tirages manqués de suite.
     private var tirageEnCours = false
     private var tirageARefaire = false
@@ -121,7 +177,12 @@ class MainActivity : AppCompatActivity() {
 
     private val retour = object : OnBackPressedCallback(false) {
         override fun handleOnBackPressed() {
-            if (modeRecherche) quitterLaRecherche() else { pile.removeLast(); afficher() }
+            when {
+                modeRecherche -> quitterLaRecherche()
+                onglet == Onglet.PODCASTS && podcastOuvert != null -> fermerLePodcast()
+                onglet == Onglet.PODCASTS -> onglets.check(R.id.ongletRadio)
+                else -> { pile.removeLast(); afficher() }
+            }
         }
     }
 
@@ -168,6 +229,18 @@ class MainActivity : AppCompatActivity() {
         recherchePays = findViewById(R.id.recherchePays)
         rechercheStyle = findViewById(R.id.rechercheStyle)
         rechercheEtat = findViewById(R.id.rechercheEtat)
+        onglets = findViewById(R.id.onglets)
+        podcastsPanneau = findViewById(R.id.podcasts)
+        podcastsNom = findViewById(R.id.podcastsNom)
+        podcastsEtat = findViewById(R.id.podcastsEtat)
+        episodesPanneau = findViewById(R.id.episodesPanneau)
+        episodesDeplier = findViewById(R.id.episodesDeplier)
+        episodesFiltre = findViewById(R.id.episodesFiltre)
+        episodesEtat = findViewById(R.id.episodesEtat)
+        lectureAvancement = findViewById(R.id.lectureAvancement)
+        lectureBarre = findViewById(R.id.lectureBarre)
+        lectureReste = findViewById(R.id.lectureReste)
+        ecoutes = Ecoutes(this)
 
         adaptateur = ListeAdaptateur(
             surDossier = { pile.addLast(it); afficher() },
@@ -176,6 +249,12 @@ class MainActivity : AppCompatActivity() {
             surStationLong = { menuStation(it) },
             estFavorite = { maListe.estFavorite(it.uuid) },
             surEtoile = { etoiler(it) },
+            surPodcast = { ouvrirLePodcast(it) },
+            surPodcastLong = { menuPodcast(it) },
+            estSuivi = { maListe.estSuivi(it.flux) },
+            surEtoilePodcast = { suivre(it) },
+            surDate = { basculerLaDate(it) },
+            surEpisode = { jouerLEpisode(it) },
         )
         liste.layoutManager = LinearLayoutManager(this)
         liste.adapter = adaptateur
@@ -206,6 +285,29 @@ class MainActivity : AppCompatActivity() {
         }
         recherchePays.onItemSelectedListener = surFiltre
         rechercheStyle.onItemSelectedListener = surFiltre
+
+        onglets.addOnButtonCheckedListener { _, id, coche ->
+            if (coche) choisirLOnglet(if (id == R.id.ongletPodcasts) Onglet.PODCASTS else Onglet.RADIO)
+        }
+        podcastsNom.doAfterTextChanged { programmerLaRecherchePodcasts() }
+        findViewById<View>(R.id.podcastsColler).setOnClickListener { collerUneAdresse() }
+        episodesFiltre.doAfterTextChanged {
+            plisDeRecherche.clear()
+            if (podcastOuvert != null) montrerLesEpisodes()
+        }
+        episodesDeplier.setOnClickListener { basculerTousLesJours() }
+        findViewById<View>(R.id.lectureReculer).setOnClickListener { sauter(-15_000) }
+        findViewById<View>(R.id.lectureAvancer).setOnClickListener { sauter(15_000) }
+        lectureBarre.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(barre: SeekBar, progression: Int, parUtilisateur: Boolean) {
+                if (parUtilisateur) lectureReste.text = "-" + formaterDuree((barre.max - progression).toLong())
+            }
+            override fun onStartTrackingTouch(barre: SeekBar) { barreTenue = true }
+            override fun onStopTrackingTouch(barre: SeekBar) {
+                barreTenue = false
+                controleur?.seekTo(barre.progress * 1_000L)
+            }
+        })
 
         if (Build.VERSION.SDK_INT >= 33 &&
             checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
@@ -252,6 +354,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onStop() {
+        minuterie.removeCallbacks(avancement)
         controleur?.removeListener(surLecteur)
         controleurFutur?.let { MediaController.releaseFuture(it) }
         controleur = null
@@ -402,7 +505,7 @@ class MainActivity : AppCompatActivity() {
     private fun menuDossier(noeud: Noeud): Boolean {
         val chemin = noeud.chemin
         if (!noeud.mien || chemin == null) return proposerDeRetirer(noeud)
-        val actions = listOf<Pair<String, () -> Unit>>(
+        val actions = mutableListOf<Pair<String, () -> Unit>>(
             getString(R.string.nouveau_sous_dossier) to {
                 demanderUnNom(R.string.nouveau_sous_dossier) { nom ->
                     agir(surJournal = { it.dossierCreer(chemin + nom) }) { it.creerDossier(chemin + nom) }
@@ -424,6 +527,17 @@ class MainActivity : AppCompatActivity() {
                     .show()
             },
         )
+        // Monter et descendre parmi ses frères : un geste « dossiers.ordonner » avec tous les noms dans le nouvel ordre.
+        val freres = pile.lastOrNull()?.sousDossiers?.filter { it.mien && it.chemin != null } ?: emptyList()
+        val i = freres.indexOfFirst { it.chemin == chemin }
+        val parent = chemin.dropLast(1)
+        fun ordonner(vers: Int) {
+            val noms = freres.map { it.titre }.toMutableList()
+            noms.add(vers, noms.removeAt(i))
+            agir(surJournal = { it.dossiersOrdonner(parent, noms) }) { it.ordonnerDossiers(parent, noms) }
+        }
+        if (i > 0) actions += getString(R.string.monter) to { ordonner(i - 1) }
+        if (i in 0 until freres.size - 1) actions += getString(R.string.descendre) to { ordonner(i + 1) }
         MaterialAlertDialogBuilder(this)
             .setTitle(noeud.titre)
             .setItems(actions.map { it.first }.toTypedArray()) { _, i -> actions[i].second() }
@@ -448,16 +562,27 @@ class MainActivity : AppCompatActivity() {
 
     // ---- La liste ----
 
+    /** Le sous-titre de la racine : le serveur apparié, s'il ne répond pas, et la version. */
+    private fun sousTitreDeLaRacine(): String = listOfNotNull(
+        serveur.nom.takeIf { serveur.apparie && it.isNotEmpty() },
+        getString(R.string.injoignable_court).takeIf { serveur.apparie && serveurInjoignable },
+        BuildConfig.VERSION_NAME,
+    ).joinToString(" · ")
+
     private fun afficher() {
         val apparie = serveur.apparie
-        // Apparié, les fichiers n'ont plus cours.
-        barre.menu.findItem(R.id.ouvrir).isVisible = !apparie
+        // Apparié, les fichiers n'ont plus cours ; la loupe et le fichier sont de l'onglet Radio.
+        barre.menu.findItem(R.id.ouvrir).isVisible = !apparie && onglet == Onglet.RADIO
+        barre.menu.findItem(R.id.chercher).isVisible = onglet == Onglet.RADIO
         if (modeRecherche) {
             retour.isEnabled = true
             barre.navigationIcon = getDrawable(R.drawable.ic_retour)
             barre.logo = null
             barre.title = getString(R.string.annuaire)
             barre.subtitle = null
+            onglets.visibility = View.GONE
+            podcastsPanneau.visibility = View.GONE
+            episodesPanneau.visibility = View.GONE
             recherche.visibility = View.VISIBLE
             vide.visibility = View.GONE
             liste.visibility = View.VISIBLE
@@ -465,19 +590,21 @@ class MainActivity : AppCompatActivity() {
             return
         }
         recherche.visibility = View.GONE
+        if (onglet == Onglet.PODCASTS) {
+            afficherLesPodcasts()
+            return
+        }
+        podcastsPanneau.visibility = View.GONE
+        episodesPanneau.visibility = View.GONE
         val noeud = pile.lastOrNull()
         val racine = pile.size <= 1
         retour.isEnabled = !racine
+        onglets.visibility = if (racine) View.VISIBLE else View.GONE
         barre.navigationIcon = if (racine) null else getDrawable(R.drawable.ic_retour)
         // À la racine, le logo devant le nom ; dans un dossier, la flèche retour prend sa place.
         barre.logo = if (racine) getDrawable(R.drawable.logo) else null
         barre.title = noeud?.titre ?: getString(R.string.app_name)
-        // À la racine, le serveur apparié, s'il ne répond pas, et la version.
-        barre.subtitle = if (!racine) null else listOfNotNull(
-            serveur.nom.takeIf { apparie && it.isNotEmpty() },
-            getString(R.string.injoignable_court).takeIf { apparie && serveurInjoignable },
-            BuildConfig.VERSION_NAME,
-        ).joinToString(" · ")
+        barre.subtitle = if (racine) sousTitreDeLaRacine() else null
         if (noeud == null) {
             videTexte.text = if (apparie) getString(R.string.copie_absente, serveur.nom) else getString(R.string.aucun_fichier)
             videBouton.visibility = if (apparie) View.GONE else View.VISIBLE
@@ -711,6 +838,282 @@ class MainActivity : AppCompatActivity() {
         champ.requestFocus()
     }
 
+    // ---- Les podcasts ----
+
+    private fun choisirLOnglet(choix: Onglet) {
+        if (onglet == choix) return
+        if (modeRecherche) quitterLaRecherche(sansAfficher = true)
+        onglet = choix
+        afficher()
+    }
+
+    /** L'onglet Podcasts : la recherche et ses résultats, ou le podcast ouvert et ses épisodes. */
+    private fun afficherLesPodcasts() {
+        val p = podcastOuvert
+        retour.isEnabled = true
+        barre.navigationIcon = if (p == null) null else getDrawable(R.drawable.ic_retour)
+        barre.logo = if (p == null) getDrawable(R.drawable.logo) else null
+        barre.title = p?.nom ?: getString(R.string.app_name)
+        barre.subtitle = if (p == null) sousTitreDeLaRacine() else if (episodes.isEmpty()) getString(R.string.flux_en_cours) else p.auteur
+        onglets.visibility = if (p == null) View.VISIBLE else View.GONE
+        podcastsPanneau.visibility = if (p == null) View.VISIBLE else View.GONE
+        episodesPanneau.visibility = if (p == null) View.GONE else View.VISIBLE
+        vide.visibility = View.GONE
+        liste.visibility = View.VISIBLE
+        when {
+            p != null -> montrerLesEpisodes()
+            podcastsNom.text.isNullOrBlank() -> {
+                // Le champ vide : mes podcasts, dans l'ordre du serveur, avec leur dernier épisode quand il est lu.
+                val miens = maListe.charger()?.podcasts ?: emptyList()
+                podcastsEtat.text = if (miens.isEmpty()) getString(R.string.aucun_podcast_suivi) else getString(R.string.mes_podcasts)
+                adaptateur.montrerPodcasts(miens, derniersEpisodes)
+                lireLesDerniersEpisodes(miens)
+            }
+            else -> adaptateur.montrerPodcasts(podcastsResultats)
+        }
+    }
+
+    /** Le dernier épisode de chacun de mes podcasts, flux par flux, en arrière-plan, une fois par vie de l'écran. */
+    private fun lireLesDerniersEpisodes(miens: List<Podcast>) {
+        for (p in miens) {
+            if (derniersEpisodes.containsKey(p.flux) || !derniersEnCours.add(p.flux)) continue
+            lifecycleScope.launch {
+                val titre: String? = try {
+                    withContext(Dispatchers.IO) { Flux.lire(p.flux, p).episodes.firstOrNull()?.titre ?: "" }
+                } catch (e: Exception) {
+                    Log.w(Fichiers.JOURNAL, "podcasts : dernier épisode de ${p.flux} : ${e.message}")
+                    null
+                }
+                derniersEpisodes[p.flux] = titre?.takeIf { it.isNotEmpty() } ?: titre
+                derniersEnCours.remove(p.flux)
+                if (onglet == Onglet.PODCASTS && podcastOuvert == null && podcastsNom.text.isNullOrBlank()) adaptateur.rafraichir(p)
+            }
+        }
+    }
+
+    private fun programmerLaRecherchePodcasts() {
+        if (onglet != Onglet.PODCASTS) return
+        minuterie.removeCallbacks(lancerPodcasts)
+        minuterie.postDelayed(lancerPodcasts, 400)
+    }
+
+    private fun chercherDesPodcasts() {
+        if (onglet != Onglet.PODCASTS) return
+        val texte = podcastsNom.text.toString().trim()
+        val g = ++generationPodcasts
+        if (texte.length < 2) {
+            podcastsResultats = emptyList()
+            if (podcastOuvert == null) afficher()
+            if (texte.isNotEmpty()) podcastsEtat.text = getString(R.string.podcasts_tapez)
+            return
+        }
+        podcastsEtat.text = getString(R.string.recherche_en_cours)
+        lifecycleScope.launch {
+            try {
+                val trouves = withContext(Dispatchers.IO) { AnnuairePodcasts.chercher(texte) }
+                if (g != generationPodcasts || onglet != Onglet.PODCASTS) return@launch
+                podcastsResultats = trouves
+                podcastsEtat.text = if (trouves.isEmpty()) getString(R.string.podcasts_rien)
+                else resources.getQuantityString(R.plurals.podcasts_nombre, trouves.size, trouves.size)
+                if (podcastOuvert == null) { afficher(); liste.scrollToPosition(0) }
+            } catch (e: Exception) {
+                if (g != generationPodcasts || onglet != Onglet.PODCASTS) return@launch
+                Log.w(Fichiers.JOURNAL, "podcasts : recherche : ${e.message}")
+                podcastsEtat.text = getString(R.string.podcasts_injoignable, e.message)
+            }
+        }
+    }
+
+    /** Le flux lu sur le téléphone, et, apparié, les positions d'écoute mises d'accord avec le serveur. */
+    private fun ouvrirLePodcast(podcast: Podcast, proposerDeSuivre: Boolean = false) {
+        (getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager).hideSoftInputFromWindow(podcastsNom.windowToken, 0)
+        podcastOuvert = podcast
+        episodes = emptyList()
+        ecoutesDuPodcast = emptyMap()
+        toutDeplie = false
+        exceptions.clear()
+        plisDeRecherche.clear()
+        episodesFiltre.setText("")
+        afficher()
+        lifecycleScope.launch {
+            try {
+                val lu = withContext(Dispatchers.IO) {
+                    val lu = Flux.lire(podcast.flux, podcast)
+                    try {
+                        ecoutes.synchroniser(podcast.flux, serveur)
+                    } catch (e: Exception) {
+                        Log.w(Fichiers.JOURNAL, "écoutes : pas mises d'accord avec le serveur : ${e.message}")
+                    }
+                    lu
+                }
+                if (podcastOuvert?.flux != podcast.flux) return@launch
+                podcastOuvert = lu.podcast
+                episodes = lu.episodes
+                ecoutesDuPodcast = withContext(Dispatchers.IO) { ecoutes.pour(podcast.flux) }
+                if (lu.sansSon) Toast.makeText(this@MainActivity, R.string.flux_sans_son, Toast.LENGTH_LONG).show()
+                else if (lu.episodes.isEmpty()) Toast.makeText(this@MainActivity, R.string.aucun_episode, Toast.LENGTH_SHORT).show()
+                afficher()
+                liste.scrollToPosition(0)
+                // Un flux collé à la main, qui a du son et qu'on ne suit pas encore : proposer de le suivre.
+                if (proposerDeSuivre && !lu.sansSon && !maListe.estSuivi(lu.podcast.flux)) {
+                    MaterialAlertDialogBuilder(this@MainActivity)
+                        .setTitle(R.string.suivre_ce_podcast)
+                        .setMessage(lu.podcast.nom)
+                        .setNegativeButton(R.string.pas_maintenant, null)
+                        .setPositiveButton(R.string.suivre) { _, _ -> suivre(lu.podcast) }
+                        .show()
+                }
+            } catch (e: Exception) {
+                if (podcastOuvert?.flux != podcast.flux) return@launch
+                Log.w(Fichiers.JOURNAL, "podcasts : flux ${podcast.flux} : ${e.message}")
+                Toast.makeText(this@MainActivity, getString(R.string.flux_injoignable, e.message), Toast.LENGTH_LONG).show()
+                fermerLePodcast()
+            }
+        }
+    }
+
+    /** L'étoile d'un podcast : suivi ou plus suivi, un geste comme les favoris. */
+    private fun suivre(podcast: Podcast) {
+        val etait = maListe.estSuivi(podcast.flux)
+        agir(
+            message = getString(if (etait) R.string.podcast_retire else R.string.podcast_suivi, podcast.nom),
+            apres = { adaptateur.rafraichir(podcast) },
+            surJournal = { if (etait) it.podcastRetirer(podcast.flux) else it.podcastAjouter(podcast) },
+        ) { if (etait) it.retirerPodcast(podcast.flux) else it.ajouterPodcast(podcast) }
+    }
+
+    /** L'appui long sur un podcast : suivre ou non, et dans mes podcasts, monter et descendre. */
+    private fun menuPodcast(podcast: Podcast): Boolean {
+        val suivi = maListe.estSuivi(podcast.flux)
+        val actions = ArrayList<Pair<String, () -> Unit>>()
+        actions += getString(if (suivi) R.string.ne_plus_suivre else R.string.suivre) to { suivre(podcast) }
+        val miens = maListe.charger()?.podcasts ?: emptyList()
+        val i = miens.indexOfFirst { it.flux == podcast.flux }
+        if (podcastsNom.text.isNullOrBlank() && i >= 0) {
+            fun ordonner(vers: Int) {
+                val fluxs = miens.map { it.flux }.toMutableList()
+                fluxs.add(vers, fluxs.removeAt(i))
+                agir(surJournal = { it.podcastsOrdonner(fluxs) }) { it.ordonnerPodcasts(fluxs) }
+            }
+            if (i > 0) actions += getString(R.string.monter) to { ordonner(i - 1) }
+            if (i < miens.size - 1) actions += getString(R.string.descendre) to { ordonner(i + 1) }
+        }
+        MaterialAlertDialogBuilder(this)
+            .setTitle(podcast.nom)
+            .setItems(actions.map { it.first }.toTypedArray()) { _, k -> actions[k].second() }
+            .show()
+        return true
+    }
+
+    /**
+     * Les épisodes du podcast ouvert, filtrés par le champ de recherche sur
+     * le titre et le résumé, sans égard aux accents ni aux majuscules ; les
+     * jours sans épisode retenu disparaissent. Tout replié par défaut, tout
+     * déplié pendant une recherche. Puis le bouton « tout déplier » se relit :
+     * il dit ce que le prochain appui fera, déplier tant qu'un jour est
+     * replié, replier quand tout est ouvert ; sans jour, il est éteint.
+     */
+    private fun montrerLesEpisodes() {
+        val filtre = Episode.normaliser(episodesFiltre.text.toString().trim())
+        enRecherche = filtre.isNotEmpty()
+        val retenus = if (enRecherche) episodes.filter { filtre in it.texteDeRecherche } else episodes
+        adaptateur.montrerEpisodes(retenus, ecoutesDuPodcast) { clef ->
+            if (enRecherche) clef !in plisDeRecherche else toutDeplie != (clef in exceptions)
+        }
+        episodesEtat.visibility = if (retenus.isEmpty() && episodes.isNotEmpty()) View.VISIBLE else View.GONE
+        episodesEtat.text = getString(R.string.aucun_episode)
+        val desJours = adaptateur.jours.isNotEmpty()
+        val replier = desJours && adaptateur.joursReplies == 0
+        episodesDeplier.isEnabled = desJours
+        episodesDeplier.alpha = if (desJours) 1f else 0.38f
+        episodesDeplier.setImageResource(if (replier) R.drawable.ic_replier else R.drawable.ic_deplier)
+        episodesDeplier.contentDescription = getString(if (replier) R.string.tout_replier else R.string.tout_deplier)
+        TooltipCompat.setTooltipText(episodesDeplier, episodesDeplier.contentDescription)
+    }
+
+    /** Un appui sur l'en-tête d'un jour le déplie ou le replie, contre le choix courant. */
+    private fun basculerLaDate(clef: String) {
+        val plis = if (enRecherche) plisDeRecherche else exceptions
+        if (!plis.remove(clef)) plis += clef
+        montrerLesEpisodes()
+    }
+
+    /** Le bouton à gauche du champ : s'il reste un jour replié, tout se déplie ; sinon tout se replie. */
+    private fun basculerTousLesJours() {
+        val deplier = adaptateur.joursReplies > 0
+        if (enRecherche) {
+            plisDeRecherche.clear()
+            if (!deplier) plisDeRecherche += adaptateur.jours
+        } else {
+            toutDeplie = deplier
+            exceptions.clear()
+        }
+        montrerLesEpisodes()
+    }
+
+    /** L'adresse d'un flux absent de l'annuaire, collée à la main : ouvert tel quel, et proposé à suivre. */
+    private fun collerUneAdresse() {
+        val champ = EditText(this).apply {
+            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_URI
+            hint = "https://…/rss"
+        }
+        val marge = (20 * resources.displayMetrics.density).toInt()
+        val cadre = FrameLayout(this).apply { setPadding(marge, 0, marge, 0); addView(champ) }
+        MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.adresse_du_flux)
+            .setView(cadre)
+            .setNegativeButton(R.string.annuler, null)
+            .setPositiveButton(R.string.valider) { _, _ ->
+                var adresse = champ.text.toString().trim()
+                if (adresse.isEmpty()) return@setPositiveButton
+                if (!adresse.contains("://")) adresse = "https://$adresse"
+                ouvrirLePodcast(Podcast(adresse, adresse, null, null, null), proposerDeSuivre = true)
+            }
+            .show()
+        champ.requestFocus()
+    }
+
+    private fun fermerLePodcast() {
+        podcastOuvert = null
+        episodes = emptyList()
+        ecoutesDuPodcast = emptyMap()
+        episodesFiltre.setText("")
+        (getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager).hideSoftInputFromWindow(episodesFiltre.windowToken, 0)
+        afficher()
+    }
+
+    /** Un épisode seul dans le lecteur, repris où l'on en était s'il n'est pas terminé. */
+    private fun jouerLEpisode(episode: Episode) {
+        val c = controleur
+        if (c == null) {
+            Toast.makeText(this, R.string.lecteur_pas_pret, Toast.LENGTH_SHORT).show()
+            return
+        }
+        val reprise = ecoutesDuPodcast[episode.guid]?.takeIf { !it.termine && it.position > 0 }?.position ?: 0L
+        c.setMediaItem(episode.versElement(), reprise * 1_000)
+        c.prepare()
+        c.play()
+    }
+
+    private fun sauter(ms: Long) {
+        val c = controleur ?: return
+        val duree = c.duration.takeIf { it != C.TIME_UNSET } ?: Long.MAX_VALUE
+        c.seekTo((c.currentPosition + ms).coerceIn(0, duree))
+    }
+
+    /** La barre et le temps restant de l'épisode en cours, sauf pendant que le doigt tient la barre. */
+    private fun rafraichirAvancement() {
+        val c = controleur ?: return
+        if (c.currentMediaItem?.estUnEpisode != true) return
+        val duree = c.duration.takeIf { it != C.TIME_UNSET && it > 0 } ?: 0L
+        val position = c.currentPosition.coerceAtLeast(0)
+        if (barreTenue) return
+        lectureBarre.max = (duree / 1_000).toInt().coerceAtLeast(1)
+        lectureBarre.progress = (position / 1_000).toInt()
+        lectureBarre.isEnabled = duree > 0
+        lectureReste.text = if (duree > 0) "-" + formaterDuree((duree - position) / 1_000) else formaterDuree(position / 1_000)
+    }
+
     // ---- La lecture ----
 
     /** La liste où l'on a appuyé devient la file du lecteur : « suivant » y passe à la station d'après. */
@@ -746,18 +1149,24 @@ class MainActivity : AppCompatActivity() {
         }
         lecture.visibility = View.VISIBLE
         val fiche = element.mediaMetadata
+        val episode = element.estUnEpisode
         val nom = (fiche.station ?: fiche.title ?: "").toString()
         lectureNom.text = nom
-        // Le titre du flux : ce que le lecteur combine, quand il diffère du nom de la station.
-        val titre = c.mediaMetadata.title?.toString()?.takeIf { it.isNotBlank() && it != nom }
+        // Le titre du flux : ce que le lecteur combine, quand il diffère du nom de la station. Pour un épisode, le podcast.
+        val titre = if (episode) fiche.artist?.toString() else c.mediaMetadata.title?.toString()?.takeIf { it.isNotBlank() && it != nom }
         val erreur = c.playerError
         lectureEtat.text = when {
             erreur != null -> getString(R.string.injoignable, erreur.errorCodeName.removePrefix("ERROR_CODE_"))
             c.playbackState == Player.STATE_BUFFERING -> getString(R.string.connexion)
             c.isPlaying -> titre ?: getString(R.string.en_direct)
-            c.playbackState == Player.STATE_READY -> getString(R.string.en_pause)
+            c.playbackState == Player.STATE_READY -> if (episode) titre ?: getString(R.string.en_pause) else getString(R.string.en_pause)
+            c.playbackState == Player.STATE_ENDED -> titre ?: ""
             else -> ""
         }
+        // Pour un épisode, la barre d'avancement, rafraîchie chaque seconde tant que l'écran est là.
+        lectureAvancement.visibility = if (episode) View.VISIBLE else View.GONE
+        minuterie.removeCallbacks(avancement)
+        if (episode) { rafraichirAvancement(); minuterie.postDelayed(avancement, 1_000) }
         val enLecture = c.playWhenReady && erreur == null
         lectureBouton.setImageResource(if (enLecture) R.drawable.ic_pause else R.drawable.ic_lecture)
         lectureBouton.contentDescription = getString(if (enLecture) R.string.pause else R.string.lire)

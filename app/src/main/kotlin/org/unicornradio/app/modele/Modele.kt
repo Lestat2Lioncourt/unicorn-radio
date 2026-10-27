@@ -51,12 +51,14 @@ class Noeud(
     val chemin: List<String>? = null,
     /** Un noeud de la liste qu'on modifie, favoris ou dossier à soi, par opposition à un fichier importé. */
     val mien: Boolean = false,
+    /** À la racine d'une liste, les podcasts suivis, dans l'ordre. */
+    val podcasts: List<org.unicornradio.app.podcasts.Podcast> = emptyList(),
 ) {
     val nombreDeStations: Int
         get() = stations.size + sousDossiers.sumOf { it.nombreDeStations }
 
     /** Le même arbre, marqué comme étant à soi, dossiers compris. */
-    fun aMoi(): Noeud = Noeud(titre, sousDossiers.map { it.aMoi() }, stations, fichier, mesFavoris, chemin, mien = true)
+    fun aMoi(): Noeud = Noeud(titre, sousDossiers.map { it.aMoi() }, stations, fichier, mesFavoris, chemin, mien = true, podcasts = podcasts)
 
     /** Tous les dossiers de l'arbre, parents avant enfants, dans l'ordre d'affichage. */
     fun tousLesDossiers(): List<Noeud> = sousDossiers.flatMap { listOf(it) + it.tousLesDossiers() }
