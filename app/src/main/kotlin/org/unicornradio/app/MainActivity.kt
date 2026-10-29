@@ -230,6 +230,8 @@ class MainActivity : AppCompatActivity() {
         lectureInitiales = findViewById(R.id.lectureInitiales)
         lectureNom = findViewById(R.id.lectureNom)
         lectureEtat = findViewById(R.id.lectureEtat)
+        // Le défilement d'un titre trop long ne part que sur une vue « sélectionnée ».
+        lectureEtat.isSelected = true
         lectureBouton = findViewById(R.id.lectureBouton)
         recherche = findViewById(R.id.recherche)
         rechercheNom = findViewById(R.id.rechercheNom)

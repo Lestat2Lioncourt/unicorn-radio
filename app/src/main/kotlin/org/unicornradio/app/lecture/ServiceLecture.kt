@@ -9,12 +9,14 @@ import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
+import androidx.media3.common.Metadata
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
+import androidx.media3.extractor.metadata.icy.IcyInfo
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
 import org.unicornradio.app.BuildConfig
@@ -61,6 +63,7 @@ class ServiceLecture : MediaSessionService() {
             .build()
         lecteur.addListener(Journal)
         lecteur.addListener(suivi)
+        lecteur.addListener(titres)
 
         val ouvrir = PendingIntent.getActivity(
             this, 0, Intent(this, MainActivity::class.java),
@@ -80,6 +83,42 @@ class ServiceLecture : MediaSessionService() {
         }
         session = null
         super.onDestroy()
+    }
+
+    // ---- Le titre en cours d'une station ----
+
+    /**
+     * Le titre que la station annonce dans son flux, les métadonnées ICY.
+     * Le lecteur les lit, mais quand il combine la fiche de l'élément et ce
+     * qui vient du flux, la fiche passe par-dessus : un titre posé dans la
+     * fiche cache celui du flux. Alors on écoute les métadonnées nous-mêmes
+     * et on pose le titre dans la fiche de l'élément en cours, remplacé sur
+     * place, même adresse, sans couper le son. La station qui n'annonce plus
+     * rien reprend son nom pour titre, et l'écran redit « En direct ».
+     */
+    private val titres = object : Player.Listener {
+        override fun onMetadata(metadata: Metadata) {
+            val p = session?.player ?: return
+            val item = p.currentMediaItem ?: return
+            if (item.estUnEpisode) return
+            var vu = false
+            var titre: String? = null
+            for (i in 0 until metadata.length()) {
+                val e = metadata.get(i) as? IcyInfo ?: continue
+                vu = true
+                titre = e.title?.trim()?.takeIf { it.isNotEmpty() }
+            }
+            if (!vu) return
+            val fiche = item.mediaMetadata
+            val nom = fiche.station?.toString() ?: return
+            val nouveau = titre ?: nom
+            if (fiche.title?.toString() == nouveau) return
+            Log.i(Fichiers.JOURNAL, "titre du flux « $nouveau »")
+            p.replaceMediaItem(
+                p.currentMediaItemIndex,
+                item.buildUpon().setMediaMetadata(fiche.buildUpon().setTitle(nouveau).build()).build(),
+            )
+        }
     }
 
     // ---- Où l'on en est d'un épisode ----

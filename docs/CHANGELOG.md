@@ -3,6 +3,15 @@
 Une entrée par chantier, la plus récente en tête. Le détail de chacun est
 dans `correctifs/`.
 
+## 2026-10-29 — 011 · Le titre en cours, enfin affiché
+
+Le titre que la station annonce dans son flux ne s'était jamais affiché :
+le lecteur garde la fiche de la station par-dessus ce qui vient du flux, et
+la fiche portait le nom en guise de titre. Le service pose maintenant le
+titre du flux dans la fiche lui-même, sans couper le son ; barre,
+notification et écran de verrouillage le montrent. Les titres longs
+défilent.
+
 ## 2026-10-29 — 010 · Proposer la mise à jour
 
 Après la première version publiée, la 0.9.3 : à l'ouverture, au plus une

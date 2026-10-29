@@ -8,8 +8,10 @@ import org.unicornradio.app.modele.Station
 
 /**
  * Une station devient un élément du lecteur. Le nom va dans `station` et
- * `artist`, et d'abord dans `title` : le titre ICY du flux, quand il arrive,
- * remplace `title` seul, et la notification lit « titre — station ».
+ * `artist`, et d'abord dans `title` ; le titre ICY du flux, quand il arrive,
+ * est posé dans `title` par le service (`ServiceLecture.titres`), car le
+ * lecteur seul garderait la fiche par-dessus le flux. La notification lit
+ * alors « titre — station ».
  */
 fun Station.versElement(): MediaItem = MediaItem.Builder()
     .setMediaId(uuid)
