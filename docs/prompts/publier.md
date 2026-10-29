@@ -97,4 +97,6 @@ dossiers en place.
 
 ---
 
-Dernière publication : aucune.
+Dernière publication : 0.9.3, code 15, le 2026-10-29, la première. La
+clef `unicorn-radio` créée ce jour-là, empreinte SHA-256 commençant par
+`E7:EE:76:0B`.

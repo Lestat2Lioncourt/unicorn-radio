@@ -16,14 +16,19 @@ is documented in [docs/format-d-echange.md](docs/format-d-echange.md).
 
 ## Status
 
-Early days. The project is at the skeleton stage: the build chain and an
-empty application. The roadmap is in [docs/ROADMAP.md](docs/ROADMAP.md),
-the history in [docs/CHANGELOG.md](docs/CHANGELOG.md).
+Usable, and young. Since 0.9.3, the first published release: directory
+search, favourites and nested folders, background playback, export files,
+pairing with a Unicorn-TV at home, and podcasts with resume shared with
+the PC. Unicorn-TV is not required. The roadmap is in
+[docs/ROADMAP.md](docs/ROADMAP.md), the history in
+[docs/CHANGELOG.md](docs/CHANGELOG.md).
 
 ## Installing
 
-Releases carry a signed APK. Allow installation from unknown sources on the
-phone, open the file, done. There is no Play Store listing.
+The [Releases](https://github.com/Lestat2Lioncourt/unicorn-radio/releases)
+carry a signed APK. Allow installation from unknown sources on the phone,
+open the file, done. Later releases install over the previous one. There is
+no Play Store listing.
 
 ## Building
 
@@ -56,15 +61,20 @@ fichier est décrit dans [docs/format-d-echange.md](docs/format-d-echange.md).
 
 ## État
 
-Les débuts. Le projet en est au squelette : la chaîne de construction et une
-application vide. La feuille de route est dans
+Utilisable, et jeune. Depuis la 0.9.3, première version publiée : la
+recherche dans l'annuaire, les favoris et les dossiers à plusieurs niveaux,
+la lecture en arrière-plan, les fichiers d'export, l'appariement à un
+Unicorn-TV de la maison, et les podcasts avec la reprise partagée avec le
+PC. Unicorn-TV n'est pas nécessaire. La feuille de route est dans
 [docs/ROADMAP.md](docs/ROADMAP.md), l'historique dans
 [docs/CHANGELOG.md](docs/CHANGELOG.md).
 
 ## Installer
 
-Les releases portent un APK signé. Autoriser les sources inconnues sur le
-téléphone, ouvrir le fichier, c'est tout. Pas de Play Store.
+Les [Releases](https://github.com/Lestat2Lioncourt/unicorn-radio/releases)
+portent un APK signé. Autoriser les sources inconnues sur le téléphone,
+ouvrir le fichier, c'est tout. Les versions suivantes s'installent
+par-dessus. Pas de Play Store.
 
 ## Construire
 
