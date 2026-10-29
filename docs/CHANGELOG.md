@@ -3,6 +3,15 @@
 Une entrée par chantier, la plus récente en tête. Le détail de chacun est
 dans `correctifs/`.
 
+## 2026-10-29 — 010 · Proposer la mise à jour
+
+Après la première version publiée, la 0.9.3 : à l'ouverture, au plus une
+fois par jour, l'application regarde la dernière release du dépôt GitHub
+et, s'il y a plus récent, montre la note dans sa langue avec « Installer »
+et « Plus tard ». Installer télécharge l'APK et ouvre l'installeur
+d'Android, qui demande encore. « Mise à jour… » dans le menu vérifie tout
+de suite.
+
 ## 2026-10-27 — 009 · Mes podcasts, et les épisodes par date
 
 Le deuxième palier des podcasts : la liste suivie du serveur sous l'onglet

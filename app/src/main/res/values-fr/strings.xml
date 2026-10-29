@@ -131,4 +131,13 @@
         <item quantity="one">%d changement refusé par le serveur</item>
         <item quantity="other">%d changements refusés par le serveur</item>
     </plurals>
+    <string name="mise_a_jour_menu">Mise à jour…</string>
+    <string name="version_disponible">Version %s disponible</string>
+    <string name="installer">Installer</string>
+    <string name="plus_tard">Plus tard</string>
+    <string name="a_jour">À jour : %s</string>
+    <string name="github_injoignable">GitHub injoignable : %s</string>
+    <string name="telechargement_lance">Téléchargement de la version %s… Android proposera ensuite de l\'installer.</string>
+    <string name="telechargement_echoue">Le téléchargement a échoué (%s). Vous pouvez prendre le fichier sur la page de la version.</string>
+    <string name="ouvrir_la_page">Ouvrir la page</string>
 </resources>

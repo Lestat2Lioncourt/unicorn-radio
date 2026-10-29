@@ -133,6 +133,15 @@
         <item quantity="one">%d change refused by the server</item>
         <item quantity="other">%d changes refused by the server</item>
     </plurals>
+    <string name="mise_a_jour_menu">Check for updates…</string>
+    <string name="version_disponible">Version %s available</string>
+    <string name="installer">Install</string>
+    <string name="plus_tard">Later</string>
+    <string name="a_jour">Up to date: %s</string>
+    <string name="github_injoignable">GitHub unreachable: %s</string>
+    <string name="telechargement_lance">Downloading version %s… Android will then ask to install it.</string>
+    <string name="telechargement_echoue">The download failed (%s). You can get the file from the release page.</string>
+    <string name="ouvrir_la_page">Open the page</string>
     <!-- Les noms des langues, dans leur langue : les mêmes partout. -->
     <string name="langue_francais" translatable="false">Français</string>
     <string name="langue_anglais" translatable="false">English</string>

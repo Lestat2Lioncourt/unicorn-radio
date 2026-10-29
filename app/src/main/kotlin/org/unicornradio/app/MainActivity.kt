@@ -52,6 +52,8 @@ import org.unicornradio.app.fichier.Fichiers
 import org.unicornradio.app.fichier.LectureFichier
 import org.unicornradio.app.lecture.ServiceLecture
 import org.unicornradio.app.lecture.versElement
+import org.unicornradio.app.miseajour.Installation
+import org.unicornradio.app.miseajour.MiseAJour
 import org.unicornradio.app.modele.Noeud
 import org.unicornradio.app.modele.Station
 import org.unicornradio.app.podcasts.AnnuairePodcasts
@@ -165,6 +167,11 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    // La mise à jour proposée : une vérification à la fois, le téléchargement s'il est lancé.
+    private val miseAJour by lazy { MiseAJour(this) }
+    private var installation: Installation? = null
+    private var verificationEnCours = false
+
     // Le serveur apparié : un tirage à la fois, et la barre dit s'il ne répond pas, après deux tirages manqués de suite.
     private var tirageEnCours = false
     private var tirageARefaire = false
@@ -260,11 +267,14 @@ class MainActivity : AppCompatActivity() {
         liste.adapter = adaptateur
 
         barre.inflateMenu(R.menu.principal)
+        // Les trois points du menu, de la même teinte que les autres icônes de la barre.
+        barre.overflowIcon?.setTint(getColor(R.color.icone_barre))
         barre.setOnMenuItemClickListener {
             when (it.itemId) {
                 R.id.ouvrir -> { ouvrirUnFichier(); true }
                 R.id.chercher -> { entrerDansLaRecherche(); true }
                 R.id.serveur -> { ouvrirServeur.launch(Intent(this, ServeurActivity::class.java)); true }
+                R.id.miseAJour -> { verifierLaMiseAJour(aLaMain = true); true }
                 else -> false
             }
         }
@@ -351,6 +361,13 @@ class MainActivity : AppCompatActivity() {
             }, MoreExecutors.directExecutor())
         }
         tirer()
+        verifierLaMiseAJour(aLaMain = false)
+    }
+
+    override fun onDestroy() {
+        installation?.fermer()
+        installation = null
+        super.onDestroy()
     }
 
     override fun onStop() {
@@ -558,6 +575,77 @@ class MainActivity : AppCompatActivity() {
             }
             .show()
         return true
+    }
+
+    // ---- La mise à jour proposée ----
+
+    /**
+     * La dernière release du dépôt GitHub, comparée à la version installée.
+     * D'elle-même à l'ouverture, au plus une fois par jour et sans un mot si
+     * rien n'est plus récent ou si GitHub ne répond pas ; à la main depuis le
+     * menu, avec la réponse dans tous les cas.
+     */
+    private fun verifierLaMiseAJour(aLaMain: Boolean) {
+        if (verificationEnCours) return
+        if (!aLaMain && !miseAJour.aVerifier()) return
+        verificationEnCours = true
+        lifecycleScope.launch {
+            try {
+                val derniere = withContext(Dispatchers.IO) { miseAJour.derniere() }
+                miseAJour.noterLaVerification()
+                if (derniere != null && MiseAJour.plusRecente(derniere.numero, BuildConfig.VERSION_NAME)) {
+                    proposerLaVersion(derniere)
+                } else if (aLaMain) {
+                    Toast.makeText(this@MainActivity, getString(R.string.a_jour, BuildConfig.VERSION_NAME), Toast.LENGTH_SHORT).show()
+                }
+            } catch (e: Exception) {
+                Log.w(Fichiers.JOURNAL, "mise à jour : ${e.message}")
+                if (aLaMain) Toast.makeText(this@MainActivity, getString(R.string.github_injoignable, e.message), Toast.LENGTH_LONG).show()
+            } finally {
+                verificationEnCours = false
+            }
+        }
+    }
+
+    /** La note dans la langue de l'application, et deux boutons : installer, ou plus tard, c'est-à-dire demain. */
+    private fun proposerLaVersion(version: MiseAJour.Version) {
+        val langue = resources.configuration.locales[0].language
+        MaterialAlertDialogBuilder(this)
+            .setTitle(getString(R.string.version_disponible, version.numero))
+            .setMessage(MiseAJour.noteDans(version.note, langue))
+            .setNegativeButton(R.string.plus_tard, null)
+            .setPositiveButton(R.string.installer) { _, _ -> installerLaVersion(version) }
+            .show()
+    }
+
+    /** L'APK joint à la release, téléchargé par Android, puis son installeur ; sans APK joint, ou s'il échoue, la page de la version. */
+    private fun installerLaVersion(version: MiseAJour.Version) {
+        if (version.apk == null) {
+            ouvrirLaPage(version.page)
+            return
+        }
+        val i = installation ?: Installation(this) { raison ->
+            MaterialAlertDialogBuilder(this)
+                .setMessage(getString(R.string.telechargement_echoue, raison))
+                .setNegativeButton(R.string.annuler, null)
+                .setPositiveButton(R.string.ouvrir_la_page) { _, _ -> ouvrirLaPage(version.page) }
+                .show()
+        }.also { installation = it }
+        try {
+            i.lancer(version)
+            Toast.makeText(this, getString(R.string.telechargement_lance, version.numero), Toast.LENGTH_LONG).show()
+        } catch (e: Exception) {
+            Log.w(Fichiers.JOURNAL, "mise à jour : téléchargement impossible : ${e.message}")
+            ouvrirLaPage(version.page)
+        }
+    }
+
+    private fun ouvrirLaPage(page: String) {
+        try {
+            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(page)))
+        } catch (e: Exception) {
+            Toast.makeText(this, page, Toast.LENGTH_LONG).show()
+        }
     }
 
     // ---- La liste ----

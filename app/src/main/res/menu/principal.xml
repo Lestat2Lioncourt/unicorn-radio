@@ -24,4 +24,8 @@
         android:title="@string/langue"
         app:actionLayout="@layout/drapeaux"
         app:showAsAction="always" />
+    <item
+        android:id="@+id/miseAJour"
+        android:title="@string/mise_a_jour_menu"
+        app:showAsAction="never" />
 </menu>

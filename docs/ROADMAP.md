@@ -69,20 +69,13 @@ Chacun utilisable seul.
   locaux, versés au serveur à l'appariement. Rien n'existe encore d'aucun
   côté ; Unicorn-TV construit les routes, l'application vient ensuite.
 - Un égaliseur, comme sur le bureau.
-- **Proposer la mise à jour**, demandé le 2026-10-26 : à l'ouverture, au
-  plus une fois par jour, l'application demande à GitHub la dernière version
-  publiée dans les « Releases » du dépôt, et s'il y a plus récent, le dit,
-  avec la note de version dans la langue de l'application, français ou
-  anglais, écrite dans les deux comme sur le bureau, et deux boutons,
-  installer ou plus tard. Jamais
-  d'installation sans le geste de l'utilisateur, et l'installeur d'Android
-  confirme encore. Deux prérequis : une clef de signature de publication,
-  stable et gardée hors du dépôt, sans quoi Android refuse la mise à jour
-  par-dessus l'APK de débogage ; et la procédure de publication,
-  `prompts/publier.md`, étiquette, note de version et APK joint à la
-  release. Pour commencer, le bouton peut ouvrir la page de la version dans
-  le navigateur ; télécharger et lancer l'installeur depuis l'application
-  viendra après, avec la permission d'installer des paquets.
+- **Proposer la mise à jour**, demandé le 2026-10-26, fait au 010 le
+  2026-10-29 après la première version publiée : la dernière release du
+  dépôt lue au plus une fois par jour, la note dans la langue de
+  l'application, « Installer » télécharge l'APK et ouvre l'installeur
+  d'Android, qui confirme encore ; « Plus tard » redemande le lendemain.
+  La clef de signature, stable et hors du dépôt, et la procédure
+  `prompts/publier.md` étaient les prérequis.
 
 ## Écarté
 

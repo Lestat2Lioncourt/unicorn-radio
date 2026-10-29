@@ -11,6 +11,8 @@
     <!-- Lire le QR code d'appariement ; sans camera, l'adresse et le code se tapent. -->
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-feature android:name="android.hardware.camera" android:required="false" />
+    <!-- La mise a jour proposee : ouvrir l'installeur sur l'APK telecharge. Android demande encore a l'utilisateur. -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 
     <!-- La raison d'etre du projet : les flux des stations sont, pour la
          plupart, en http simple. Une application a le droit de le dire. -->

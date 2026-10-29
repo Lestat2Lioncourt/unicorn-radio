@@ -20,8 +20,8 @@ android {
         applicationId = "org.unicornradio.app"
         minSdk = 26
         targetSdk = 36
-        versionCode = 15
-        versionName = "0.9.3"
+        versionCode = 17
+        versionName = "0.10.1"
     }
 
     signingConfigs {
@@ -38,6 +38,11 @@ android {
     buildTypes {
         release {
             isMinifyEnabled = false
+            signingConfigs.findByName("release")?.let { signingConfig = it }
+        }
+        // Sur la machine qui a la clef, les APK de debogage la portent aussi : ils s'installent
+        // par-dessus une version publiee, et inversement, sans desinstaller. Ailleurs, la clef de debogage.
+        debug {
             signingConfigs.findByName("release")?.let { signingConfig = it }
         }
     }
