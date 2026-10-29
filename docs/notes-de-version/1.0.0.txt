@@ -1,0 +1,15 @@
+[FR] Version 1.0.0 : l'application vous prévient des mises à jour
+
+À l'ouverture, au plus une fois par jour, l'application regarde s'il existe une version plus récente
+S'il y en a une, elle montre la note de version dans votre langue, avec deux boutons, Installer et Plus tard
+Installer télécharge la nouvelle version et ouvre l'installeur d'Android, qui vous demande encore ; rien ne se fait sans vous
+« Mise à jour… » dans le menu en haut à droite vérifie tout de suite
+Les épisodes d'un podcast : un bouton à gauche de la recherche déplie ou replie tous les jours d'un coup
+
+[EN] Version 1.0.0: the app tells you about updates
+
+When opened, at most once a day, the app checks whether a newer release exists
+If there is one, it shows the release note in your language, with two buttons, Install and Later
+Install downloads the new version and opens the Android installer, which asks you again; nothing happens without you
+"Check for updates…" in the top-right menu checks right away
+Podcast episodes: a button left of the search field expands or collapses all days at once
