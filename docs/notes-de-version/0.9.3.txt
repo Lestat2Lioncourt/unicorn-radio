@@ -1,0 +1,27 @@
+[FR] Première version publiée : radios, podcasts, et le serveur de la maison
+
+Cherchez une radio dans l'annuaire Radio Browser, par nom, pays ou style, et mettez-lui une étoile
+Vos favoris et vos dossiers à plusieurs niveaux, rangés depuis le téléphone
+Lecture en arrière-plan, titre en cours sur l'écran de verrouillage, boutons du casque
+Les flux en http simple et l'AAC, que les navigateurs refusent, passent ici
+Ouvrez un fichier d'export pour retrouver une liste faite ailleurs
+L'application se suffit à elle-même : Unicorn-TV n'est pas nécessaire
+Si vous l'avez, apparié par QR code, le téléphone tire sa liste et lui renvoie chaque geste, même fait hors ligne
+Podcasts : cherchez dans l'annuaire d'Apple ou collez l'adresse d'un flux, suivez-les, écoutez les épisodes par jour
+Reprise de chaque épisode où vous en étiez, partagée avec le PC, quinze secondes en arrière ou en avant
+En français et en anglais, au choix dans la barre du haut
+Signée pour durer : les versions suivantes s'installeront par-dessus celle-ci
+
+[EN] First published release: radios, podcasts, and the home server
+
+Search the Radio Browser directory by name, country or style, and star a station
+Your favourites and nested folders, filed from the phone
+Background playback, current track on the lock screen, headset buttons
+Plain http streams and AAC, which browsers refuse, play here
+Open an export file to get back a list made elsewhere
+The app stands on its own: Unicorn-TV is not required
+If you have it, paired by QR code, the phone pulls its list and sends back every change, even made offline
+Podcasts: search the Apple directory or paste a feed address, follow them, listen to episodes by day
+Each episode resumes where you left it, shared with the PC, fifteen seconds back or forward
+In French and in English, chosen from the top bar
+Signed to last: the next releases will install over this one
