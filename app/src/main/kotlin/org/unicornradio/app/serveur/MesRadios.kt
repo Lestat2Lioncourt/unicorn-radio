@@ -76,6 +76,70 @@ class MesRadios(private val contexte: Context, private val nom: String) {
         oublier()
     }
 
+    /** La section telle qu'elle est sur le disque, `format`, `favoris`, `dossiers`, `podcasts`, pour l'exporter ; `null` sans fichier. */
+    @Synchronized
+    fun section(): JSONObject? {
+        if (!fichier.exists()) return null
+        return try {
+            val o = JSONObject(fichier.readText())
+            JSONObject()
+                .put("format", o.optInt("format", LectureFichier.FORMAT_CONNU))
+                .put("favoris", o.optJSONArray("favoris") ?: JSONArray())
+                .put("dossiers", o.optJSONArray("dossiers") ?: JSONArray())
+                .put("podcasts", o.optJSONArray("podcasts") ?: JSONArray())
+        } catch (e: Exception) {
+            Log.w(Fichiers.JOURNAL, "$nom illisible : ${e.message}")
+            null
+        }
+    }
+
+    /**
+     * Une liste versée dans celle-ci, en une seule écriture, comme l'import du
+     * bureau : rien d'effacé, ce qui manque s'ajoute à la suite, un fichier
+     * rejoué ne double rien. Avec un journal, chaque ajout y est noté pour le
+     * serveur, dans l'ordre. Rend le nombre de stations ajoutées, favoris et
+     * dossiers confondus, et de podcasts.
+     */
+    @Synchronized
+    fun verser(racine: Noeud, journal: Journal?): Pair<Int, Int> {
+        var stations = 0
+        var podcasts = 0
+        modifier { s ->
+            val favoris = s.favoris()
+            for (st in racine.stations) {
+                if (favoris.indexDeStation(st.uuid) >= 0) continue
+                favoris.put(EcritureFichier.fiche(st, favoris.length()))
+                journal?.favoriAjouter(st)
+                stations++
+            }
+            val dossiers = s.dossiers()
+            for (d in racine.tousLesDossiers()) {
+                val chemin = d.chemin ?: continue
+                if (dossiers.indexDeDossier(chemin) < 0) journal?.dossierCreer(chemin)
+                val liste = dossiers.assurer(chemin).stationsDe()
+                for (st in d.stations) {
+                    if (liste.indexDeStation(st.uuid) >= 0) continue
+                    liste.put(EcritureFichier.fiche(st, liste.length()))
+                    journal?.dossierAjouter(chemin, st)
+                    stations++
+                }
+            }
+            val suivis = s.podcastsJson()
+            for (p in racine.podcasts) {
+                if (suivis.indexDeFlux(p.flux) >= 0) continue
+                suivis.put(
+                    JSONObject().put("flux", p.flux).put("nom", p.nom)
+                        .put("auteur", p.auteur ?: JSONObject.NULL).put("image", p.image ?: JSONObject.NULL)
+                        .put("ordre", suivis.length()),
+                )
+                journal?.podcastAjouter(p)
+                podcasts++
+            }
+        }
+        Log.i(Fichiers.JOURNAL, "$nom : « ${racine.titre} » versé, $stations stations et $podcasts podcasts ajoutés")
+        return stations to podcasts
+    }
+
     // ---- Les favoris ----
 
     /** À la fin des favoris ; déjà là, rien. */

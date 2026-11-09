@@ -13,6 +13,7 @@ import androidx.media3.common.Metadata
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
+import androidx.media3.datasource.DefaultDataSource
 import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
@@ -27,6 +28,8 @@ import org.unicornradio.app.podcasts.CLEF_DUREE
 import org.unicornradio.app.podcasts.CLEF_FLUX
 import org.unicornradio.app.podcasts.CLEF_GUID
 import org.unicornradio.app.podcasts.Ecoutes
+import org.unicornradio.app.podcasts.FileDEcoute
+import org.unicornradio.app.podcasts.episode
 import org.unicornradio.app.podcasts.estUnEpisode
 import org.unicornradio.app.serveur.Serveur
 
@@ -52,8 +55,9 @@ class ServiceLecture : MediaSessionService() {
             .setAllowCrossProtocolRedirects(true)
             .setConnectTimeoutMs(12_000)
             .setReadTimeoutMs(12_000)
+        // Le http pour les flux et les épisodes en ligne ; `DefaultDataSource` par-dessus lit aussi les fichiers téléchargés.
         val lecteur = ExoPlayer.Builder(this)
-            .setMediaSourceFactory(DefaultMediaSourceFactory(this).setDataSourceFactory(http))
+            .setMediaSourceFactory(DefaultMediaSourceFactory(this).setDataSourceFactory(DefaultDataSource.Factory(this, http)))
             .setAudioAttributes(
                 AudioAttributes.Builder().setUsage(C.USAGE_MEDIA).setContentType(C.AUDIO_CONTENT_TYPE_MUSIC).build(),
                 true,
@@ -70,6 +74,8 @@ class ServiceLecture : MediaSessionService() {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
         session = MediaSession.Builder(this, lecteur).setSessionActivity(ouvrir).build()
+        // La minuterie d'extinction, programmée par l'écran : à l'échéance, la pause.
+        Extinction.arret = { session?.player?.pause() }
     }
 
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaSession? = session
@@ -77,6 +83,8 @@ class ServiceLecture : MediaSessionService() {
     override fun onDestroy() {
         noterLaPosition()
         main.removeCallbacks(toutesLesDixSecondes)
+        Extinction.annuler()
+        Extinction.arret = null
         session?.run {
             player.release()
             release()
@@ -114,6 +122,8 @@ class ServiceLecture : MediaSessionService() {
             val nouveau = titre ?: nom
             if (fiche.title?.toString() == nouveau) return
             Log.i(Fichiers.JOURNAL, "titre du flux « $nouveau »")
+            // Un vrai titre, pas le nom de la station entre deux morceaux : noté dans « Précédemment ».
+            if (titre != null && titre != nom) Precedents.noter(this@ServiceLecture, item.mediaId, titre)
             p.replaceMediaItem(
                 p.currentMediaItemIndex,
                 item.buildUpon().setMediaMetadata(fiche.buildUpon().setTitle(nouveau).build()).build(),
@@ -126,6 +136,7 @@ class ServiceLecture : MediaSessionService() {
     private val main = Handler(Looper.getMainLooper())
     private val ecoutes by lazy { Ecoutes(this) }
     private val serveur by lazy { Serveur(this) }
+    private val fileDEcoute by lazy { FileDEcoute(this) }
     private val toutesLesDixSecondes = object : Runnable {
         override fun run() {
             noterLaPosition()
@@ -140,6 +151,12 @@ class ServiceLecture : MediaSessionService() {
      * foulée s'il répond, gardée sinon.
      */
     private val suivi = object : Player.Listener {
+        /** Un épisode qui démarre, à la main ou à la suite du précédent : la liste de lecture le note, tout de suite, avant que l'écran ne relise. */
+        override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
+            val e = mediaItem?.episode ?: return
+            fileDEcoute.noterLeDepart(e)
+        }
+
         override fun onIsPlayingChanged(isPlaying: Boolean) {
             main.removeCallbacks(toutesLesDixSecondes)
             if (isPlaying) main.postDelayed(toutesLesDixSecondes, 10_000) else noterLaPosition()

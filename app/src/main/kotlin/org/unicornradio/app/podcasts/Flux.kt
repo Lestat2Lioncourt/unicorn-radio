@@ -67,6 +67,8 @@ object Flux {
                             n == "description" && b.description == null -> b.description = p.nextText()
                             n == "summary" && ns == ITUNES && b.description == null -> b.description = p.nextText()
                             n == "encoded" && b.description == null -> b.description = p.nextText()
+                            // L'image propre à l'épisode, quand le flux en donne une.
+                            n == "image" && ns == ITUNES -> p.getAttributeValue(null, "href")?.trim()?.takeIf { it.isNotEmpty() }?.let { b.image = it }
                             n == "enclosure" -> {
                                 val url = p.getAttributeValue(null, "url")?.trim()
                                 val mime = p.getAttributeValue(null, "type")?.trim()
@@ -102,6 +104,7 @@ object Flux {
                                 podcast = titre ?: connu?.nom ?: adresse,
                                 image = image ?: connu?.image,
                                 description = b.description?.let { texteNu(it) }?.takeIf { it.isNotEmpty() },
+                                imagePropre = b.image,
                             )
                         }
                         courant = null
@@ -137,6 +140,7 @@ object Flux {
         var url: String? = null
         var type: String? = null
         var description: String? = null
+        var image: String? = null
     }
 
     /** Le HTML d'un résumé ramené à du texte, pour la recherche. */

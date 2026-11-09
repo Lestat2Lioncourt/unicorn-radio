@@ -3,6 +3,51 @@
 Une entrée par chantier, la plus récente en tête. Le détail de chacun est
 dans `correctifs/`.
 
+## 2026-11-09 — 018 · Une vignette par épisode
+
+Chaque ligne d'épisode a sa vignette, l'image propre de l'épisode quand le
+flux en donne une, sinon celle du podcast, les initiales si rien ne charge ;
+l'épisode en cours montre la même. Comme sur le bureau le même jour.
+
+## 2026-11-09 — 017 · La nuit appartient à la veille
+
+Un épisode publié avant 1 h 30, heure locale, est rangé au jour d'avant :
+l'intégrale d'une émission du soir, publiée après minuit, retrouve son
+jour. La date gardée ne change pas. La même règle que le bureau.
+
+## 2026-11-09 — 016 · Télécharger un épisode
+
+Par appui long, « Télécharger » : Android télécharge, la ligne dit
+« Téléchargé », et l'épisode joue sans réseau, à la main ou à la suite
+dans la liste de lecture. « Supprimer le téléchargement » le reprend.
+
+## 2026-11-09 — 015 · Exporter mes radios, importer une liste
+
+« Exporter mes radios… » écrit le fichier d'échange, favoris, dossiers et
+podcasts, là où l'on veut. « Importer une liste… » remplace « Ouvrir un
+fichier… » : le fichier est versé dans ma liste, rien d'effacé, rien
+doublé, et apparié, les ajouts partent au serveur comme autant de gestes.
+Les fichiers ouverts par les versions d'avant sont versés une fois.
+
+## 2026-11-09 — 014 · Précédemment
+
+Un appui sur la ligne de lecture, pendant qu'une station joue : les titres
+qu'elle a annoncés, avec leur heure, notés par le service au fil de
+l'écoute ; apparié, ceux que le serveur de la maison a vus s'y ajoutent.
+
+## 2026-11-09 — 013 · La minuterie d'extinction, le site, l'adresse du flux
+
+Une icône dans la ligne de lecture : 15 à 90 minutes, puis la pause ; les
+minutes qui restent dessous. Et dans le menu d'une station, « Ouvrir le
+site de la station » et « Copier l'adresse du flux », comme sur le bureau.
+
+## 2026-11-09 — 012 · La liste de lecture des podcasts
+
+« Lire ensuite » par appui long sur un épisode ; la liste de lecture en
+tête de mes podcasts, précédents, en cours, à suivre, gardée sur le
+téléphone ; l'enchaînement tout seul à la fin de chaque épisode ; « Vider
+la liste ». Le troisième palier des podcasts.
+
 ## 2026-10-29 — 011 · Le titre en cours, enfin affiché
 
 Le titre que la station annonce dans son flux ne s'était jamais affiché :

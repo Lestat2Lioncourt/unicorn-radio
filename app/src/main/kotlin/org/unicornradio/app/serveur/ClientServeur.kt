@@ -4,6 +4,7 @@ import android.util.Log
 import org.json.JSONObject
 import org.unicornradio.app.BuildConfig
 import org.unicornradio.app.fichier.Fichiers
+import org.unicornradio.app.lecture.Precedents
 import java.net.ConnectException
 import java.net.HttpURLConnection
 import java.net.SocketTimeoutException
@@ -161,6 +162,24 @@ object ClientServeur {
         val corps = JSONObject().put("flux", e.flux).put("guid", e.guid).put("position", e.position)
             .put("duree", e.duree ?: JSONObject.NULL).put("termine", e.termine)
         demander(adresse, "PUT", "/api/radio/podcasts/ecoutes", corps = corps.toString(), jeton = jeton)
+    }
+
+    /**
+     * `GET /api/radio/titre/:uuid` avec le jeton : le titre que le relais du
+     * serveur voit sur cette station, et ses précédents, s'il l'écoute lui
+     * aussi ; rien sinon. Trois secondes au plus, c'est un complément.
+     */
+    fun titres(adresse: String, jeton: String, uuid: String): List<Precedents.Titre> {
+        val o = JSONObject(demander(adresse, "GET", "/api/radio/titre/" + java.net.URLEncoder.encode(uuid, "UTF-8"), jeton = jeton, delai = 3_000))
+        val liste = ArrayList<Precedents.Titre>()
+        if (!o.isNull("titre")) o.optString("titre").takeIf { it.isNotEmpty() }?.let { liste += Precedents.Titre(it, o.optLong("le")) }
+        val p = o.optJSONArray("precedents")
+        if (p != null) for (i in 0 until p.length()) {
+            val t = p.optJSONObject(i) ?: continue
+            val titre = t.optString("titre")
+            if (titre.isNotEmpty()) liste += Precedents.Titre(titre, t.optLong("le"))
+        }
+        return liste
     }
 
     /** `DELETE /api/radio/appariement` avec le jeton : le téléphone se retire. */

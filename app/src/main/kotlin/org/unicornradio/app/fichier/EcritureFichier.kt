@@ -33,17 +33,30 @@ object EcritureFichier {
         put("ordre", ordre)
     }
 
-    /** Le fichier entier, pour une liste de favoris ; les dossiers viendront avec le palier 3. */
+    /** La liste locale à sa naissance : la section à la racine, avec `application` et `exportedAt` à côté. */
     fun fichier(favoris: List<Station>, podcasts: JSONArray? = null): String {
-        val horodatage = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.ROOT)
-            .apply { timeZone = TimeZone.getTimeZone("UTC") }.format(Date())
         val racine = JSONObject()
         racine.put("application", "unicorn-radio")
-        racine.put("exportedAt", horodatage)
+        racine.put("exportedAt", maintenant())
         racine.put("format", LectureFichier.FORMAT_CONNU)
         racine.put("favoris", JSONArray().apply { favoris.forEachIndexed { i, s -> put(fiche(s, i)) } })
         racine.put("dossiers", JSONArray())
         racine.put("podcasts", podcasts ?: JSONArray())
         return racine.toString(2)
     }
+
+    /**
+     * Le fichier qu'on donne : l'enveloppe réduite du format d'échange,
+     * `application`, `version`, `exportedAt`, et la section sous `radio`,
+     * telle que le bureau l'écrit et la relit.
+     */
+    fun enveloppe(section: JSONObject): String = JSONObject()
+        .put("application", "unicorn-radio")
+        .put("version", 2)
+        .put("exportedAt", maintenant())
+        .put("radio", section)
+        .toString(2)
+
+    private fun maintenant(): String = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.ROOT)
+        .apply { timeZone = TimeZone.getTimeZone("UTC") }.format(Date())
 }

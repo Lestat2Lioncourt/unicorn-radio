@@ -10,31 +10,37 @@ import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import coil.dispose
 import coil.load
+import coil.transform.RoundedCornersTransformation
 import org.unicornradio.app.modele.Noeud
 import org.unicornradio.app.modele.Station
 import org.unicornradio.app.podcasts.Ecoute
 import org.unicornradio.app.podcasts.Episode
 import org.unicornradio.app.podcasts.Podcast
 import org.unicornradio.app.podcasts.formaterDuree
+import org.unicornradio.app.podcasts.jourDEpisode
 import java.text.SimpleDateFormat
-import java.util.Date
 import java.util.Locale
 
-/** Une ligne de la liste : un sous-dossier (ou un fichier), une station, un podcast, une date, un épisode. */
+/** Une ligne de la liste : un sous-dossier, une station, un podcast, la liste de lecture, une date, un titre de section, un épisode. */
 sealed class Ligne {
     class Dossier(val noeud: Noeud) : Ligne()
     class Station(val station: org.unicornradio.app.modele.Station) : Ligne()
     class Podcast(val podcast: org.unicornradio.app.podcasts.Podcast) : Ligne()
+    /** « Liste de lecture », en tête de mes podcasts, avec ce qu'elle compte. */
+    class Liste(val nombre: Int) : Ligne()
     /** L'en-tête d'une date ; `clef` vide pour les épisodes sans date. */
     class Date(val clef: String, val nombre: Int, val repliee: Boolean) : Ligne()
-    class Episode(val episode: org.unicornradio.app.podcasts.Episode, val ecoute: Ecoute?) : Ligne()
+    /** Un simple titre de section, « Précédents », « À suivre », ou un mot quand il n'y a rien. */
+    class Titre(val texte: String) : Ligne()
+    class Episode(val episode: org.unicornradio.app.podcasts.Episode, val ecoute: Ecoute?, val passe: Boolean = false) : Ligne()
 }
 
 /**
  * La liste d'un noeud : ses sous-dossiers, puis ses stations, une par ligne
  * et dans l'ordre du fichier, comme sur le bureau. Ou des podcasts, les
  * miens ou ceux trouvés, avec une étoile pour suivre. Ou les épisodes d'un
- * podcast, groupés par date, chaque date repliable. Ce qui joue est marqué.
+ * podcast, groupés par date, chaque date repliable. Ou la liste de lecture,
+ * passés, en cours, à suivre. Ce qui joue est marqué.
  */
 class ListeAdaptateur(
     private val surDossier: (Noeud) -> Unit,
@@ -47,8 +53,12 @@ class ListeAdaptateur(
     private val surPodcastLong: (Podcast) -> Boolean,
     private val estSuivi: (Podcast) -> Boolean,
     private val surEtoilePodcast: (Podcast) -> Unit,
+    private val surListe: () -> Unit,
     private val surDate: (String) -> Unit,
     private val surEpisode: (Episode) -> Unit,
+    private val surEpisodeLong: (Episode) -> Boolean,
+    /** Ce qu'une ligne d'épisode dit en plus de sa durée : « À la suite », « Téléchargé ». */
+    private val etiquettes: (Episode) -> List<String>,
 ) : RecyclerView.Adapter<ListeAdaptateur.Vue>() {
 
     private var lignes: List<Ligne> = emptyList()
@@ -69,8 +79,9 @@ class ListeAdaptateur(
         notifyDataSetChanged()
     }
 
-    fun montrerPodcasts(podcasts: List<Podcast>, derniersEpisodes: Map<String, String?> = emptyMap()) {
-        lignes = podcasts.map { Ligne.Podcast(it) }
+    /** Des podcasts ; avec `liste`, la liste de lecture en tête, comme sur le bureau. */
+    fun montrerPodcasts(podcasts: List<Podcast>, derniersEpisodes: Map<String, String?> = emptyMap(), liste: Int? = null) {
+        lignes = listOfNotNull(liste?.let { Ligne.Liste(it) }) + podcasts.map { Ligne.Podcast(it) }
         avecEtoiles = true
         derniers = derniersEpisodes
         notifyDataSetChanged()
@@ -84,15 +95,16 @@ class ListeAdaptateur(
 
     /**
      * Les épisodes groupés par jour, « lundi 27/10/2026 », du plus récent au
-     * plus ancien, les sans-date en bas. `depliee` dit, pour chaque clef de
-     * jour, s'il est ouvert.
+     * plus ancien, les sans-date en bas ; la nuit appartient à la veille
+     * (`jourDEpisode`). `depliee` dit, pour chaque clef de jour, s'il est
+     * ouvert.
      */
     fun montrerEpisodes(episodes: List<Episode>, ecoutes: Map<String, Ecoute>, depliee: (String) -> Boolean) {
         val format = SimpleDateFormat("EEEE dd/MM/yyyy", Locale.getDefault())
         val groupes = LinkedHashMap<String, MutableList<Episode>>()
         val sansDate = ArrayList<Episode>()
         for (e in episodes) {
-            if (e.date == null) sansDate += e else groupes.getOrPut(format.format(Date(e.date))) { ArrayList() } += e
+            if (e.date == null) sansDate += e else groupes.getOrPut(format.format(jourDEpisode(e.date))) { ArrayList() } += e
         }
         if (sansDate.isNotEmpty()) groupes[""] = sansDate
         val l = ArrayList<Ligne>()
@@ -105,6 +117,33 @@ class ListeAdaptateur(
         }
         jours = groupes.keys.toList()
         joursReplies = replies
+        lignes = l
+        avecEtoiles = false
+        notifyDataSetChanged()
+    }
+
+    /**
+     * La liste de lecture : les passés, atténués, l'épisode en cours, puis
+     * ceux à suivre, chaque groupe sous son titre ; `vide` seul quand il n'y
+     * a rien. `ecoute` donne où l'on en est de chacun.
+     */
+    fun montrerLaFile(passes: List<Episode>, enCours: Episode?, aSuivre: List<Episode>, ecoute: (Episode) -> Ecoute?, titres: Triple<String, String, String>, vide: String) {
+        val l = ArrayList<Ligne>()
+        if (passes.isNotEmpty()) {
+            l += Ligne.Titre(titres.first)
+            passes.forEach { l += Ligne.Episode(it, ecoute(it), passe = true) }
+        }
+        if (enCours != null) {
+            l += Ligne.Titre(titres.second)
+            l += Ligne.Episode(enCours, ecoute(enCours))
+        }
+        if (aSuivre.isNotEmpty()) {
+            l += Ligne.Titre(titres.third)
+            aSuivre.forEach { l += Ligne.Episode(it, ecoute(it)) }
+        }
+        if (l.isEmpty()) l += Ligne.Titre(vide)
+        jours = emptyList()
+        joursReplies = 0
         lignes = l
         avecEtoiles = false
         notifyDataSetChanged()
@@ -136,9 +175,9 @@ class ListeAdaptateur(
     }
 
     override fun getItemViewType(position: Int) = when (lignes[position]) {
-        is Ligne.Dossier -> R.layout.ligne_dossier
+        is Ligne.Dossier, is Ligne.Liste -> R.layout.ligne_dossier
         is Ligne.Station, is Ligne.Podcast -> R.layout.ligne_station
-        is Ligne.Date -> R.layout.ligne_date
+        is Ligne.Date, is Ligne.Titre -> R.layout.ligne_date
         is Ligne.Episode -> R.layout.ligne_episode
     }
 
@@ -149,6 +188,7 @@ class ListeAdaptateur(
 
     override fun onBindViewHolder(vue: Vue, position: Int) {
         val c = vue.itemView.context
+        vue.itemView.alpha = 1f
         when (val ligne = lignes[position]) {
             is Ligne.Dossier -> {
                 val n = ligne.noeud
@@ -164,6 +204,14 @@ class ListeAdaptateur(
                 vue.itemView.isActivated = false
                 vue.itemView.setOnClickListener { surDossier(n) }
                 vue.itemView.setOnLongClickListener { surDossierLong(n) }
+            }
+            is Ligne.Liste -> {
+                vue.icone?.setImageResource(R.drawable.ic_liste)
+                vue.nom.text = c.getString(R.string.liste_de_lecture)
+                vue.detail.text = c.resources.getQuantityString(R.plurals.nombre_d_episodes, ligne.nombre, ligne.nombre)
+                vue.itemView.isActivated = false
+                vue.itemView.setOnClickListener { surListe() }
+                vue.itemView.setOnLongClickListener(null)
             }
             is Ligne.Station -> {
                 val s = ligne.station
@@ -197,18 +245,32 @@ class ListeAdaptateur(
             is Ligne.Date -> {
                 vue.nom.text = ligne.clef.ifEmpty { c.getString(R.string.sans_date) }
                 vue.detail.text = c.resources.getQuantityString(R.plurals.nombre_d_episodes, ligne.nombre, ligne.nombre)
+                vue.icone?.visibility = View.VISIBLE
                 vue.icone?.rotation = if (ligne.repliee) -90f else 0f
                 vue.itemView.isActivated = false
                 vue.itemView.setOnClickListener { surDate(ligne.clef) }
                 vue.itemView.setOnLongClickListener(null)
             }
+            is Ligne.Titre -> {
+                vue.nom.text = ligne.texte
+                vue.detail.text = ""
+                vue.icone?.visibility = View.GONE
+                vue.itemView.isActivated = false
+                vue.itemView.setOnClickListener(null)
+                vue.itemView.setOnLongClickListener(null)
+                vue.itemView.isClickable = false
+                vue.itemView.isLongClickable = false
+            }
             is Ligne.Episode -> {
                 val e = ligne.episode
                 val ecoute = ligne.ecoute
                 vue.nom.text = e.titre
-                vue.detail.text = e.duree?.let { formaterDuree(it) } ?: ""
-                vue.detail.visibility = if (e.duree != null) View.VISIBLE else View.GONE
+                val details = listOfNotNull(e.duree?.let { formaterDuree(it) }) + etiquettes(e)
+                vue.detail.text = details.joinToString(" · ")
+                vue.detail.visibility = if (details.isNotEmpty()) View.VISIBLE else View.GONE
                 vue.itemView.isActivated = e.mediaId == enCours
+                vue.itemView.alpha = if (ligne.passe) 0.6f else 1f
+                image(vue, e.initiales, e.vignette, coins = 6f)
                 val duree = ecoute?.duree ?: e.duree
                 when {
                     ecoute == null || (ecoute.position <= 0 && !ecoute.termine) -> {
@@ -228,7 +290,7 @@ class ListeAdaptateur(
                     }
                 }
                 vue.itemView.setOnClickListener { surEpisode(e) }
-                vue.itemView.setOnLongClickListener(null)
+                vue.itemView.setOnLongClickListener { surEpisodeLong(e) }
             }
         }
     }
@@ -247,15 +309,21 @@ class ListeAdaptateur(
         e.setOnClickListener { action() }
     }
 
-    /** Les initiales d'abord, le logo par-dessus quand il charge ; le chargement d'avant annulé, sinon il arrive sur cette ligne. */
-    private fun image(vue: Vue, initiales: String, adresse: String?) {
+    /**
+     * Les initiales d'abord, l'image par-dessus quand elle charge ; le
+     * chargement d'avant annulé, sinon il arrive sur cette ligne. `coins`,
+     * en dp, arrondit une vignette carrée.
+     */
+    private fun image(vue: Vue, initiales: String, adresse: String?, coins: Float = 0f) {
         vue.initiales?.text = initiales
         vue.initiales?.visibility = View.VISIBLE
         vue.logo?.dispose()
         vue.logo?.setImageDrawable(null)
         if (!adresse.isNullOrBlank()) {
+            val rayon = coins * vue.itemView.resources.displayMetrics.density
             vue.logo?.load(adresse) {
                 crossfade(true)
+                if (coins > 0f) transformations(RoundedCornersTransformation(rayon))
                 listener(onSuccess = { _, _ -> vue.initiales?.visibility = View.GONE })
             }
         }

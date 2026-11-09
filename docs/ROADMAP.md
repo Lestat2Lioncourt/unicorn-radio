@@ -45,21 +45,22 @@ Chacun utilisable seul.
 - **« Exporter mes radios… »** : écrire le fichier d'échange, la section
   radio seule avec `application: "unicorn-radio"`, pour le donner à
   quelqu'un ou le garder ; le même nom que sur le bureau, décidé le
-  2026-10-27 (« renomme emporter en exporter »).
+  2026-10-27 (« renomme emporter en exporter »). Fait au 015.
 - **« Importer une liste… »** : un fichier reçu, exporté par quelqu'un
   d'autre ou fichier de configuration entier dont seule la section radio
   compte, versé dans ma liste comme autant de gestes, `favori.ajouter`,
   `dossier.ajouter` chemin et station, `podcast.ajouter` ; rien d'effacé,
   ce qui manque s'ajoute, un fichier rejoué ne double rien. Apparié, les
   gestes partent au serveur ; sans serveur, la liste locale les reçoit.
-  Aujourd'hui, un fichier ouvert s'ajoute en lecture seule à côté de la
-  liste, et disparaît de la vue une fois apparié : c'est ce que ce point
-  remplace. Décidé le 2026-10-27 avec le bureau, qui a les deux entrées.
+  Remplace le fichier ouvert en lecture seule à côté de la liste. Décidé
+  le 2026-10-27 avec le bureau, qui a les deux entrées. Fait au 015.
 
 ## Plus tard, peut-être
 
-- Les podcasts : en cours, par paliers (008, 009), chercher et écouter,
-  « Mes podcasts » ; restent la file d'écoute et le téléchargement.
+- Les podcasts : les quatre paliers sont faits, chercher et écouter (008),
+  « Mes podcasts » (009), la liste de lecture (012), le téléchargement
+  (016). Reste, peut-être, le téléchargement d'office des nouveaux
+  épisodes des podcasts suivis.
 - **La synchronisation avec l'Unicorn-TV de la maison**, décidée le
   2026-10-26 et décrite dans `format-d-echange.md` : l'application s'apparie
   à un serveur précis par QR code, ou code court tapé à la main ; le serveur
@@ -68,7 +69,9 @@ Chacun utilisable seul.
   n'est pas appariée, l'application reste en mode fichiers, avec ses favoris
   locaux, versés au serveur à l'appariement. Rien n'existe encore d'aucun
   côté ; Unicorn-TV construit les routes, l'application vient ensuite.
-- Un égaliseur, comme sur le bureau.
+- Un égaliseur, comme sur le bureau. La minuterie d'extinction, les
+  titres passés, le site et l'adresse d'une station, eux, sont faits
+  (013, 014).
 - **Proposer la mise à jour**, demandé le 2026-10-26, fait au 010 le
   2026-10-29 après la première version publiée : la dernière release du
   dépôt lue au plus une fois par jour, la note dans la langue de

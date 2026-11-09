@@ -1,17 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Unicorn-Radio</string>
-    <string name="ouvrir_un_fichier">Open a file…</string>
-    <string name="aucun_fichier">No file yet.\n\nOpen an export file, or search the directory and star the stations you like.</string>
+    <string name="importer_une_liste">Import a list…</string>
+    <string name="exporter_mes_radios">Export my radios…</string>
+    <string name="aucun_fichier">Nothing here yet.\n\nSearch the directory and star the stations you like, or import a list.</string>
     <plurals name="nombre_de_stations">
         <item quantity="one">%d station</item>
         <item quantity="other">%d stations</item>
     </plurals>
-    <string name="fichier_ajoute">%1$s: %2$d stations</string>
+    <string name="liste_importee">List imported: %1$d stations, %2$d podcasts added</string>
+    <string name="fichiers_verses">Files opened before, poured into my list: %d stations</string>
     <string name="fichier_illisible">Unreadable file: %s</string>
-    <string name="retirer_fichier_titre">Remove this file?</string>
-    <string name="retirer_fichier_texte">%s will be removed from the app. The original stays where it was.</string>
-    <string name="retirer">Remove</string>
+    <string name="fichier_exporte">File written: %d stations</string>
+    <string name="rien_a_exporter">Nothing to export yet</string>
+    <string name="export_echoue">Could not write the file: %s</string>
     <string name="annuler">Cancel</string>
     <string name="connexion">Connecting…</string>
     <string name="en_direct">Live</string>
@@ -142,6 +144,35 @@
     <string name="telechargement_lance">Downloading version %s… Android will then ask to install it.</string>
     <string name="telechargement_echoue">The download failed (%s). You can get the file from the release page.</string>
     <string name="ouvrir_la_page">Open the page</string>
+    <string name="ouvrir_le_site">Open the station\'s website</string>
+    <string name="copier_l_adresse">Copy the stream address</string>
+    <string name="adresse_copiee">Address copied</string>
+    <string name="minuterie">Sleep timer</string>
+    <string name="minuterie_minutes">%d min</string>
+    <string name="minuterie_court" translatable="false">%d min</string>
+    <string name="minuterie_annuler">Cancel the timer</string>
+    <string name="minuterie_arret_dans">Stop in %d min</string>
+    <string name="precedemment">Previously · %s</string>
+    <string name="precedemment_rien">Nothing yet: the titles the station announces pile up here while you listen.</string>
+    <string name="liste_de_lecture">Playlist</string>
+    <string name="lire_ensuite">Play next</string>
+    <string name="retirer_de_la_file">Remove from the queue</string>
+    <string name="retirer_de_la_liste">Remove from the list</string>
+    <string name="a_la_suite">Up next</string>
+    <string name="mis_a_la_suite">Up next: %s</string>
+    <string name="vider_la_liste">Clear the list</string>
+    <string name="vider_la_liste_texte">Everything in the list goes, the episode playing included, which stops.</string>
+    <string name="liste_vide">Nothing in the list yet. Long-press an episode: Play next.</string>
+    <string name="precedents">Previous</string>
+    <string name="en_cours">Playing</string>
+    <string name="a_suivre">Up next</string>
+    <string name="telecharger">Download</string>
+    <string name="telechargement_en_cours">Downloading…</string>
+    <string name="telecharge">Downloaded</string>
+    <string name="supprimer_le_telechargement">Delete the download</string>
+    <string name="telechargement_episode">Downloading: %s</string>
+    <string name="telechargement_impossible">Download impossible: %s</string>
+    <string name="telechargement_supprime">Download deleted: %s</string>
     <!-- Les noms des langues, dans leur langue : les mêmes partout. -->
     <string name="langue_francais" translatable="false">Français</string>
     <string name="langue_anglais" translatable="false">English</string>

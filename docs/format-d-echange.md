@@ -2,7 +2,8 @@
 
 Ce document fait foi pour les deux projets. Unicorn-TV l'écrit par son menu
 « Emporter sur une autre machine » et le relit par « Rapporter » ;
-Unicorn-Radio le lit, et saura l'écrire. Établi le 2026-10-25 depuis
+Unicorn-Radio le lit par « Importer une liste… » et l'écrit par « Exporter
+mes radios… » depuis le 2026-11-09 (015). Établi le 2026-10-25 depuis
 l'export d'Unicorn-TV tel qu'il est, chantier 218 là-bas.
 
 ## L'enveloppe : le fichier de configuration d'Unicorn-TV
@@ -67,8 +68,8 @@ L'import d'Unicorn-TV accepte ce nom d'application et ne lit que `radio`.
   enfants dans le tableau, le lecteur les trie du chemin le plus court au
   plus long.
 - `podcasts` : les abonnements aux podcasts, un par ligne avec l'adresse du
-  flux RSS, le nom, l'auteur, l'image et l'ordre. Unicorn-Radio ne le lit
-  pas pour l'instant et le recopie tel quel s'il écrit le fichier.
+  flux RSS, le nom, l'auteur, l'image et l'ordre. Unicorn-Radio le lit
+  depuis le 009 et l'écrit depuis le 015.
 
 Une station peut figurer dans plusieurs dossiers, et dans les favoris en
 plus : c'est le même `station_uuid` à chaque fois.
@@ -103,7 +104,11 @@ ajoutée à sa copie de l'annuaire depuis sa fiche, un dossier absent est
 créé, une station absente d'un dossier y est ajoutée à la suite, dans
 l'ordre du fichier. Rejouer le même fichier ne fait rien de plus. Une ligne
 sans `station_uuid`, ou sans `url` quand la station est inconnue, est
-passée. Unicorn-Radio fait de même.
+passée. Unicorn-Radio fait de même, et, apparié, chaque ajout devient un
+geste du journal (`favori.ajouter`, `dossier.creer`, `dossier.ajouter`,
+`podcast.ajouter`) envoyé au serveur. Depuis le 2026-11-09, Unicorn-TV
+écrit aussi une clef `origine` dans l'en-tête de ses sauvegardes
+automatiques ; Unicorn-Radio l'ignore.
 
 ## Exemple
 
