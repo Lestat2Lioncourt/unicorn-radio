@@ -3,6 +3,12 @@
 Une entrée par chantier, la plus récente en tête. Le détail de chacun est
 dans `correctifs/`.
 
+## 2026-11-09 — 019 · La mise à jour vérifiée à chaque ouverture
+
+Plus d'attente d'un jour : la dernière release est lue à chaque retour au
+premier plan, et proposée si elle est plus récente. « Plus tard » écarte
+cette version-là jusqu'au lendemain ; le menu propose toujours.
+
 ## 2026-11-09 — 018 · Une vignette par épisode
 
 Chaque ligne d'épisode a sa vignette, l'image propre de l'épisode quand le

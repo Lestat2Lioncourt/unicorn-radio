@@ -10,10 +10,11 @@ import java.net.URL
 
 /**
  * La mise à jour proposée : la dernière release du dépôt GitHub, lue par
- * l'API publique sans compte, comparée à la version installée. Au plus une
- * vérification par jour d'elle-même ; « Plus tard » compte comme une
- * vérification, on redemande le lendemain. Tout ici bloque : à appeler
- * hors du fil principal, sauf les préférences.
+ * l'API publique sans compte, comparée à la version installée. Vérifiée à
+ * chaque retour de l'écran au premier plan, sans un mot si rien n'est plus
+ * récent ; « Plus tard » écarte cette version-là jusqu'au lendemain, une
+ * plus récente encore serait proposée tout de suite. Tout ici bloque : à
+ * appeler hors du fil principal, sauf les préférences.
  */
 class MiseAJour(contexte: Context) {
 
@@ -24,12 +25,14 @@ class MiseAJour(contexte: Context) {
 
     private val prefs = contexte.getSharedPreferences("mise_a_jour", Context.MODE_PRIVATE)
 
-    /** Vrai si la dernière vérification date de plus d'un jour, ou n'a jamais eu lieu. */
-    fun aVerifier(): Boolean = System.currentTimeMillis() - prefs.getLong("verifiee_le", 0L) > UN_JOUR_MS
-
-    fun noterLaVerification() {
-        prefs.edit().putLong("verifiee_le", System.currentTimeMillis()).apply()
+    /** « Plus tard » : cette version ne sera plus proposée d'elle-même avant un jour. */
+    fun ecarter(numero: String) {
+        prefs.edit().putString("ecartee", numero).putLong("ecartee_le", System.currentTimeMillis()).apply()
     }
+
+    /** Vrai si cette version a été écartée il y a moins d'un jour. */
+    fun estEcartee(numero: String): Boolean =
+        prefs.getString("ecartee", null) == numero && System.currentTimeMillis() - prefs.getLong("ecartee_le", 0L) < UN_JOUR_MS
 
     /** La dernière release publiée, ou `null` s'il n'y en a aucune. */
     fun derniere(): Version? {

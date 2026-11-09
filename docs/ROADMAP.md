@@ -74,7 +74,7 @@ Chacun utilisable seul.
   (013, 014).
 - **Proposer la mise à jour**, demandé le 2026-10-26, fait au 010 le
   2026-10-29 après la première version publiée : la dernière release du
-  dépôt lue au plus une fois par jour, la note dans la langue de
+  dépôt lue à chaque ouverture depuis le 019, la note dans la langue de
   l'application, « Installer » télécharge l'APK et ouvre l'installeur
   d'Android, qui confirme encore ; « Plus tard » redemande le lendemain.
   La clef de signature, stable et hors du dépôt, et la procédure

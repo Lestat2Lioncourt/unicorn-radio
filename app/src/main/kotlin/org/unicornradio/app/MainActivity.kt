@@ -205,6 +205,7 @@ class MainActivity : AppCompatActivity() {
     private val miseAJour by lazy { MiseAJour(this) }
     private var installation: Installation? = null
     private var verificationEnCours = false
+    private var propositionOuverte = false
 
     // Le serveur apparié : un tirage à la fois, et la barre dit s'il ne répond pas, après deux tirages manqués de suite.
     private var tirageEnCours = false
@@ -686,20 +687,19 @@ class MainActivity : AppCompatActivity() {
 
     /**
      * La dernière release du dépôt GitHub, comparée à la version installée.
-     * D'elle-même à l'ouverture, au plus une fois par jour et sans un mot si
-     * rien n'est plus récent ou si GitHub ne répond pas ; à la main depuis le
-     * menu, avec la réponse dans tous les cas.
+     * D'elle-même à chaque retour au premier plan, sans un mot si rien n'est
+     * plus récent, si GitHub ne répond pas, ou si cette version a été écartée
+     * par « Plus tard » il y a moins d'un jour ; à la main depuis le menu,
+     * avec la réponse dans tous les cas. Une seule boîte à la fois.
      */
     private fun verifierLaMiseAJour(aLaMain: Boolean) {
-        if (verificationEnCours) return
-        if (!aLaMain && !miseAJour.aVerifier()) return
+        if (verificationEnCours || propositionOuverte) return
         verificationEnCours = true
         lifecycleScope.launch {
             try {
                 val derniere = withContext(Dispatchers.IO) { miseAJour.derniere() }
-                miseAJour.noterLaVerification()
                 if (derniere != null && MiseAJour.plusRecente(derniere.numero, BuildConfig.VERSION_NAME)) {
-                    proposerLaVersion(derniere)
+                    if (aLaMain || !miseAJour.estEcartee(derniere.numero)) proposerLaVersion(derniere)
                 } else if (aLaMain) {
                     Toast.makeText(this@MainActivity, getString(R.string.a_jour, BuildConfig.VERSION_NAME), Toast.LENGTH_SHORT).show()
                 }
@@ -712,14 +712,16 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    /** La note dans la langue de l'application, et deux boutons : installer, ou plus tard, c'est-à-dire demain. */
+    /** La note dans la langue de l'application, et deux boutons : installer, ou plus tard, c'est-à-dire demain pour cette version. */
     private fun proposerLaVersion(version: MiseAJour.Version) {
         val langue = resources.configuration.locales[0].language
+        propositionOuverte = true
         MaterialAlertDialogBuilder(this)
             .setTitle(getString(R.string.version_disponible, version.numero))
             .setMessage(MiseAJour.noteDans(version.note, langue))
-            .setNegativeButton(R.string.plus_tard, null)
+            .setNegativeButton(R.string.plus_tard) { _, _ -> miseAJour.ecarter(version.numero) }
             .setPositiveButton(R.string.installer) { _, _ -> installerLaVersion(version) }
+            .setOnDismissListener { propositionOuverte = false }
             .show()
     }
 
