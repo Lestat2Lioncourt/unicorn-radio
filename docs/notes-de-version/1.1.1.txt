@@ -1,0 +1,21 @@
+[FR] V 1.1.1 : la liste de lecture, la minuterie, le hors-ligne
+
+Le titre en cours d'une radio s'affiche, sous le nom de la station, et défile s'il est long
+Un appui sur la ligne de lecture montre les titres passés et datés de la station.
+Une minuterie d'extinction, de 15 à 90 minutes, dans la ligne de lecture avec pause à l'échéance.
+Dans le menu d'une station : ouvrir son site, copier l'adresse de son flux
+Podcasts : « Lire ensuite » par appui long, et une liste de lecture, précédents, en cours, à suivre, qui enchaîne toute seule et reste sur le téléphone
+Podcasts : « Télécharger » un épisode pour l'écouter sans réseau, et le supprimer ensuite
+Podcasts : une vignette devant chaque épisode, et un épisode publié avant 1 h 30 du matin est rangé au jour d'avant.
+« Exporter mes radios… » écrit votre liste dans un fichier ; « Importer une liste… » remplace « Ouvrir un fichier… » et verse le fichier dans votre liste, sans rien effacer ni doubler
+
+[EN] V 1.1.1: Playlists, sleep timer, and offline mode
+
+The current track playing on a radio station is displayed below the station name; if the title is long, it will scroll.
+Tapping the playback bar reveals a list of previously played tracks, complete with timestamps.
+A sleep timer (ranging from 15 to 90 minutes) is available within the playback bar, automatically pausing playback when the time expires.
+Station menu options include: opening the station's website or copying its stream URL.
+Podcasts: Use a long-press to select "Play next." A playlist—showing previous, current, and upcoming episodes—plays automatically and is saved locally on your phone.
+Podcasts: Download episodes to listen to them offline, then delete them when finished.
+Podcasts: Each episode features a thumbnail; episodes published before 1:30 AM are categorized under the previous day.
+"Export my radios..." saves your list to a file. "Import a list..." (replacing "Open a file...") adds the contents of a file to your existing list without deleting any entries or creating duplicates.
