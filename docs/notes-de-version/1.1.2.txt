@@ -1,0 +1,9 @@
+[FR] V 1.1.2 : la mise à jour proposée à chaque ouverture
+
+L'application vérifie à chaque ouverture s'il existe une version plus récente, et la propose aussitôt
+« Plus tard » n'écarte cette version que jusqu'au lendemain ; « Mise à jour… » dans le menu la propose toujours
+
+[EN] V 1.1.2: updates offered at every launch
+
+The app checks for a newer version every time it opens, and offers it right away
+"Later" sets that version aside until the next day only; "Check for updates…" in the menu always offers it
