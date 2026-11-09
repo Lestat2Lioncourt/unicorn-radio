@@ -97,8 +97,8 @@ dossiers en place.
 
 ---
 
-Dernière publication : 1.1.1, code 21, le 2026-11-09 (la 1.0.1, code 19,
-et la 1.1.0, code 20, n'ont été que des APK de débogage). Avant elle, la
-1.0.0, code 18, le 2026-10-29, et la première, 0.9.3, code 15, le même
-jour. La clef `unicorn-radio` créée ce jour-là, empreinte SHA-256
+Dernière publication : 1.1.2, code 22, le 2026-11-09, après la 1.1.1,
+code 21, le même soir (la 1.0.1, code 19, et la 1.1.0, code 20, n'ont été
+que des APK de débogage). Avant elles, la 1.0.0, code 18, le 2026-10-29,
+et la première, 0.9.3, code 15, le même jour. La clef `unicorn-radio` créée ce jour-là, empreinte SHA-256
 commençant par `E7:EE:76:0B`.
