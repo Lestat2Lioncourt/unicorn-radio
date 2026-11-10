@@ -1,0 +1,11 @@
+[FR] Le serveur gardé en mémoire
+
+L'application ne redemande plus son identité au serveur avant chaque envoi de position pendant un podcast
+Elle garde l'adresse qui a répondu, et ne la recherche à nouveau qu'en cas d'échec ou de changement de réseau
+Le PC ne voit plus une demande d'identité toutes les dix secondes pendant l'écoute
+
+[EN] The server remembered
+
+The app no longer asks the server for its identity before each position update during a podcast
+It keeps the address that answered, and looks again only after a failure or a network change
+The PC no longer sees an identity request every ten seconds while listening
