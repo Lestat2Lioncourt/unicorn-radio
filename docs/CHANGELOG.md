@@ -3,6 +3,13 @@
 Une entrée par chantier, la plus récente en tête. Le détail de chacun est
 dans `correctifs/`.
 
+## 2026-11-10 — 020 · Le serveur gardé en mémoire
+
+L'adresse du serveur qui a répondu sert telle quelle, sans lui redemander
+son identité avant chaque poussée de position ; la recherche ne reprend
+qu'en cas d'échec, puis un second essai, ou quand Android signale un autre
+réseau. Le PC ne voit plus une demande d'identité toutes les dix secondes.
+
 ## 2026-11-09 — 019 · La mise à jour vérifiée à chaque ouverture
 
 Plus d'attente d'un jour : la dernière release est lue à chaque retour au

@@ -31,6 +31,7 @@ import org.unicornradio.app.podcasts.Ecoutes
 import org.unicornradio.app.podcasts.FileDEcoute
 import org.unicornradio.app.podcasts.episode
 import org.unicornradio.app.podcasts.estUnEpisode
+import org.unicornradio.app.serveur.Reseau
 import org.unicornradio.app.serveur.Serveur
 
 /**
@@ -76,6 +77,8 @@ class ServiceLecture : MediaSessionService() {
         session = MediaSession.Builder(this, lecteur).setSessionActivity(ouvrir).build()
         // La minuterie d'extinction, programmée par l'écran : à l'échéance, la pause.
         Extinction.arret = { session?.player?.pause() }
+        // Un autre réseau pendant la lecture : le serveur sera recherché à la poussée suivante.
+        Reseau.surveiller(this)
     }
 
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaSession? = session
@@ -85,6 +88,7 @@ class ServiceLecture : MediaSessionService() {
         main.removeCallbacks(toutesLesDixSecondes)
         Extinction.annuler()
         Extinction.arret = null
+        Reseau.laisser()
         session?.run {
             player.release()
             release()

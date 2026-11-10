@@ -82,6 +82,7 @@ import org.unicornradio.app.podcasts.versElement
 import org.unicornradio.app.serveur.ClientServeur
 import org.unicornradio.app.serveur.Journal
 import org.unicornradio.app.serveur.MesRadios
+import org.unicornradio.app.serveur.Reseau
 import org.unicornradio.app.serveur.Serveur
 import org.unicornradio.app.serveur.Synchro
 import java.io.IOException
@@ -264,6 +265,7 @@ class MainActivity : AppCompatActivity() {
         locale = MesRadios(this, MesRadios.LOCALE)
         journal = Journal(this)
         synchro = Synchro(serveur, mesRadios, journal)
+        Reseau.surveiller(this)
 
         barre = findViewById(R.id.barre)
         liste = findViewById(R.id.liste)
@@ -451,6 +453,7 @@ class MainActivity : AppCompatActivity() {
         installation = null
         recepteurTelechargements?.let { unregisterReceiver(it) }
         recepteurTelechargements = null
+        Reseau.laisser()
         super.onDestroy()
     }
 

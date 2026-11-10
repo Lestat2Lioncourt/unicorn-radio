@@ -3,7 +3,9 @@ package org.unicornradio.app.serveur
 import android.content.Context
 import android.os.Build
 import android.provider.Settings
+import android.util.Log
 import org.json.JSONArray
+import org.unicornradio.app.fichier.Fichiers
 import java.util.UUID
 
 /**
@@ -46,6 +48,43 @@ class Serveur(contexte: Context) {
     val adresseActive: String?
         get() = prefs.getString("adresseActive", null)
 
+    /**
+     * L'adresse à laquelle parler : celle gardée, telle quelle, tant que rien
+     * n'a changé ; sinon la recherche complète (`retrouver`). Bloque ; lève
+     * `ClientServeur.Injoignable` si aucune adresse ne répond.
+     */
+    fun adresse(): String {
+        val gardee = adresseActive
+        if (gardee != null && !aRetrouver) return gardee
+        return retrouver()
+    }
+
+    /** La recherche complète, l'adresse gardée d'abord ; ce qui répond est gardé. Bloque. */
+    fun retrouver(): String {
+        val (adresse, _) = ClientServeur.trouver(adresses, id, adresseActive)
+        prefs.edit().putString("adresseActive", adresse).apply()
+        aRetrouver = false
+        return adresse
+    }
+
+    /**
+     * `action` avec l'adresse gardée ; si elle échoue autrement que par une
+     * révocation, le serveur est recherché et l'action refaite une fois avec
+     * ce qui répond. Bloque ; lève ce que la seconde tentative lève.
+     */
+    fun <T> avecLAdresse(action: (String) -> T): T {
+        val premiere = adresse()
+        try {
+            return action(premiere)
+        } catch (e: ClientServeur.Revoque) {
+            throw e
+        } catch (e: Exception) {
+            Log.i(Fichiers.JOURNAL, "serveur : $premiere ne répond pas (${e.message}), recherche")
+            aRetrouver = true
+            return action(retrouver())
+        }
+    }
+
     /** L'instant de la dernière copie tirée, en millisecondes, ou 0. */
     val derniereCopie: Long
         get() = prefs.getLong("derniereCopie", 0L)
@@ -86,5 +125,11 @@ class Serveur(contexte: Context) {
             .remove("id").remove("nom").remove("adresses").remove("adresseActive")
             .remove("jeton").remove("utilisateur").remove("derniereCopie")
             .apply()
+    }
+
+    companion object {
+        /** Mis par `Reseau` au changement de réseau : la prochaine demande refait la recherche. Partagé écran et service. */
+        @Volatile
+        var aRetrouver = false
     }
 }

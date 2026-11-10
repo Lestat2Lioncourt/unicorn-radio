@@ -47,9 +47,10 @@ class Ecoutes(contexte: Context) {
      */
     fun synchroniser(flux: String, serveur: Serveur) {
         val jeton = serveur.jeton ?: return
-        val (adresse, _) = ClientServeur.trouver(serveur.adresses, serveur.id, serveur.adresseActive)
-        pousser(adresse, jeton)
-        val duServeur = ClientServeur.ecoutes(adresse, jeton, flux)
+        val duServeur = serveur.avecLAdresse { adresse ->
+            pousser(adresse, jeton)
+            ClientServeur.ecoutes(adresse, jeton, flux)
+        }
         synchronized(this) {
             val t = lire()
             for (e in duServeur) {
@@ -60,31 +61,33 @@ class Ecoutes(contexte: Context) {
         }
     }
 
-    /** Pousse au serveur tout ce qui attend ; ce qui est passé n'attend plus. Bloque. */
+    /**
+     * Pousse au serveur tout ce qui attend, à l'adresse gardée ; ce qui est
+     * passé n'attend plus. Si elle ne répond pas, le serveur est recherché et
+     * la poussée refaite une fois. Bloque ; lève si rien ne passe.
+     */
     fun pousserEnAttente(serveur: Serveur) {
         val jeton = serveur.jeton ?: return
         if (synchronized(this) { enAttente().isEmpty() }) return
-        val (adresse, _) = ClientServeur.trouver(serveur.adresses, serveur.id, serveur.adresseActive)
-        pousser(adresse, jeton)
+        serveur.avecLAdresse { adresse -> pousser(adresse, jeton) }
     }
 
+    /** Une écoute après l'autre, dans l'ordre ; la première qui ne passe pas arrête tout et lève. */
     private fun pousser(adresse: String, jeton: String) {
         for (e in synchronized(this) { enAttente() }) {
             try {
                 ClientServeur.noterEcoute(adresse, jeton, e)
-                synchronized(this) {
-                    val t = lire()
-                    val actuelle = t.optJSONObject(clef(e.flux, e.guid))?.let { ecoute(clef(e.flux, e.guid), it) }
-                    if (actuelle != null && actuelle.le == e.le) {
-                        t.put(clef(e.flux, e.guid), objet(e.copy(aPousser = false)))
-                        ecrire(t)
-                    }
-                }
-            } catch (ex: ClientServeur.Revoque) {
-                throw ex
             } catch (ex: Exception) {
-                Log.w(Fichiers.JOURNAL, "écoutes : ${e.guid} non poussée : ${ex.message}")
-                return
+                if (ex !is ClientServeur.Revoque) Log.w(Fichiers.JOURNAL, "écoutes : ${e.guid} non poussée : ${ex.message}")
+                throw ex
+            }
+            synchronized(this) {
+                val t = lire()
+                val actuelle = t.optJSONObject(clef(e.flux, e.guid))?.let { ecoute(clef(e.flux, e.guid), it) }
+                if (actuelle != null && actuelle.le == e.le) {
+                    t.put(clef(e.flux, e.guid), objet(e.copy(aPousser = false)))
+                    ecrire(t)
+                }
             }
         }
     }
