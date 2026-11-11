@@ -70,8 +70,22 @@ Décidés le 2026-11-11, en pensant d'abord à qui n'a que le téléphone.
    premier à suivre ; les deux boutons sur la ligne de lecture de l'écran,
    pour les stations aussi. **Fait le 2026-11-11 (022).**
 3. **La sauvegarde automatique de la liste** : le fichier d'export écrit de
-   lui-même dans un dossier choisi une fois, à chaque changement ; un
-   téléphone perdu n'emporte plus la liste.
+   lui-même à un emplacement choisi une fois, à chaque changement ; un
+   téléphone perdu n'emporte plus la liste. Cadre décidé le 2026-11-11 :
+   - aucune question imposée, rien de redemandé tant que rien n'est choisi ;
+   - une entrée « Sauvegarde automatique… » dans le menu « … », qui ouvre
+     le sélecteur d'Android, puis montre où la sauvegarde s'écrit, la date
+     de la dernière, et permet de changer ou d'arrêter ;
+   - **un emplacement hors du téléphone d'abord** (« si on perd le
+     téléphone ») : le sélecteur d'Android propose les espaces en ligne
+     dont l'application est installée ; à éprouver, car certains
+     n'acceptent pas le choix d'un dossier mais seulement la création
+     d'un fichier, d'où peut-être un fichier choisi plutôt qu'un dossier ;
+   - un rappel discret, une seule fois, après le premier favori ou dossier
+     créé sans sauvegarde réglée ; pas de rappel quand on est apparié, le
+     serveur garde déjà la liste ;
+   - l'emplacement devenu inaccessible est dit une fois, et l'entrée du
+     menu redevient « à régler ».
 4. **La vitesse de lecture des podcasts**, et les sauts de quinze et
    trente secondes.
 5. **Reprendre seule au retour du réseau** : une lecture tombée sur une
