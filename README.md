@@ -1,5 +1,7 @@
 # Unicorn-Radio
 
+[![Downloads](https://img.shields.io/github/downloads/Lestat2Lioncourt/unicorn-radio/total)](https://github.com/Lestat2Lioncourt/unicorn-radio/releases)
+
 *[Version française plus bas.](#unicorn-radio-en-français)*
 
 Unicorn-Radio is a web radio player for Android. It searches the free
