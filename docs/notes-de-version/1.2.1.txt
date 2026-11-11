@@ -1,0 +1,17 @@
+[FR] Sauvegarde automatique, et l'application s'ouvre dans vos favoris
+
+« Sauvegarde automatique… » dans le menu « … » : votre liste est réécrite d'elle-même à chaque changement, dans un fichier choisi une fois, de préférence dans un espace en ligne ; un téléphone perdu ne l'emporte plus
+« Importer une liste… » est aussi dans le menu « … », à côté de l'export
+Au lancement, l'écran s'ouvre dans « Mes favoris » ; la flèche de retour montre les dossiers
+« Ranger dans… » et « Déplacer vers… » montrent en gris les dossiers qui contiennent déjà la station
+Le nombre de téléchargements de l'application s'affiche sous le QR code de l'invitation
+« À propos », en bas du menu : ce que fait l'application, sans compte ni collecte de données, et son code source
+
+[EN] Automatic backup, and the app opens in your favourites
+
+"Automatic backup…" in the "…" menu: your list is rewritten by itself on every change, to a file chosen once, preferably in online storage; a lost phone no longer takes it away
+"Import a list…" is also in the "…" menu, next to export
+On launch, the screen opens in "My favourites"; the back arrow shows the folders
+"File under…" and "Move to…" grey out the folders that already hold the station
+The app's download count shows under the invitation QR code
+"About", at the bottom of the menu: what the app does, no account and no data collection, and its source code
