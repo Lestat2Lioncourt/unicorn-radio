@@ -3,6 +3,31 @@
 Une entrée par chantier, la plus récente en tête. Le détail de chacun est
 dans `correctifs/`.
 
+## 2026-11-11 — 027 · À propos
+
+« À propos », en bas du menu « … » : ce que fait l'application, sans
+compte ni identifiant, aucune collecte, à qui elle parle, la licence, le
+nombre de téléchargements ; « Code source » ouvre le dépôt.
+
+## 2026-11-11 — 026 · Le nombre de téléchargements
+
+Sous le QR code de l'invitation, « Déjà téléchargée N fois » : le total
+des téléchargements des APK de toutes les releases, que GitHub compte.
+Rien sans réseau. Le même total en badge dans le README.
+
+## 2026-11-11 — 025 · Ouvrir dans les favoris, ranger en voyant où
+
+Au lancement, l'écran s'ouvre dans « Mes favoris » ; la flèche remonte à
+l'arborescence. « Ranger dans… » et « Déplacer vers… » montrent tous les
+dossiers, ceux qui contiennent déjà la station en gris et sans effet.
+
+## 2026-11-11 — 024 · La sauvegarde automatique
+
+« Sauvegarde automatique… », dans le menu : un fichier créé une fois à
+l'emplacement choisi, de préférence un espace en ligne, puis réécrit de
+lui-même à chaque changement de la liste. Un rappel discret une seule
+fois ; un emplacement perdu est dit une fois.
+
 ## 2026-11-11 — 023 · Invitation QRCode
 
 Dans le menu « … », « Invitation QRCode » montre le QR code de la page de

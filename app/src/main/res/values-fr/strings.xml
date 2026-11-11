@@ -135,10 +135,31 @@
         <item quantity="one">%d changement refusé par le serveur</item>
         <item quantity="other">%d changements refusés par le serveur</item>
     </plurals>
+    <string name="sauvegarde_automatique">Sauvegarde automatique…</string>
+    <string name="sauvegarde_explication">Votre liste est écrite dans un fichier, à un emplacement choisi une fois, puis mise à jour d\'elle-même à chaque changement.\n\nPréférez un espace de stockage en ligne plutôt que le téléphone : si le téléphone est perdu, la liste ne l\'est pas. Sur un autre téléphone, « Importer une liste… » la retrouve.</string>
+    <string name="sauvegarde_choisir">Choisir l\'emplacement…</string>
+    <string name="sauvegarde_etat">Écrite dans : %1$s\nDernière sauvegarde : %2$s</string>
+    <string name="sauvegarde_jamais">jamais</string>
+    <string name="sauvegarde_a_regler">La dernière sauvegarde a échoué : cet emplacement n\'est plus accessible. Choisissez-le de nouveau.</string>
+    <string name="sauvegarde_maintenant">Sauvegarder maintenant</string>
+    <string name="sauvegarde_changer">Changer d\'emplacement…</string>
+    <string name="sauvegarde_arreter">Arrêter</string>
+    <string name="sauvegarde_arretee">Sauvegarde automatique arrêtée</string>
+    <string name="sauvegarde_faite">Liste sauvegardée dans %s</string>
+    <string name="sauvegarde_en_panne">Sauvegarde impossible dans %s. Voyez « Sauvegarde automatique… » dans le menu.</string>
+    <string name="sauvegarde_rappel">Astuce : « Sauvegarde automatique… », dans le menu, met votre liste à l\'abri hors du téléphone.</string>
     <string name="invitation_qrcode">Invitation QRCode</string>
     <string name="invitation_texte">À scanner pour installer l\'application :\n%s</string>
     <string name="invitation_message">Unicorn-Radio, radios web et podcasts pour Android : %s</string>
     <string name="invitation_fermer">Fermer</string>
+    <string name="a_propos">À propos</string>
+    <string name="code_source">Code source</string>
+    <string name="a_propos_texte">Radios web et podcasts : chercher dans l\'annuaire libre Radio Browser et dans celui des podcasts, ranger en favoris et en dossiers, écouter en arrière-plan, télécharger des épisodes.\n\nSans compte ni identifiant. Aucune collecte : l\'application n\'envoie rien sur vous. Elle ne parle qu\'à Radio Browser (qui compte anonymement les écoutes de chaque station), à l\'annuaire des podcasts, aux stations et podcasts écoutés, à GitHub pour les mises à jour, et à votre serveur Unicorn-TV si vous en appariez un.\n\nLogiciel libre, licence GPL-3.0.</string>
+    <plurals name="invitation_telechargements">
+        <item quantity="one">Déjà téléchargée %d fois</item>
+        <item quantity="many">Déjà téléchargée %d fois</item>
+        <item quantity="other">Déjà téléchargée %d fois</item>
+    </plurals>
     <string name="envoyer_le_lien">Envoyer le lien</string>
     <string name="mise_a_jour_menu">Mise à jour…</string>
     <string name="version_disponible">Version %s disponible</string>

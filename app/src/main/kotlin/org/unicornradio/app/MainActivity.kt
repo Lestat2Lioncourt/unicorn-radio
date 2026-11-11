@@ -181,6 +181,9 @@ class MainActivity : AppCompatActivity() {
      * temps de la recherche seulement.
      */
     private var toutDeplie = false
+
+    /** Au lancement, l'écran s'ouvre dans « Mes favoris » quand il existe ; une fois, au premier chargement. */
+    private var ouvrirLesFavoris = false
     private val exceptions = HashSet<String>()
     private val plisDeRecherche = HashSet<String>()
     private var enRecherche = false
@@ -241,6 +244,13 @@ class MainActivity : AppCompatActivity() {
     private val creerLExport = registerForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
         if (uri != null) ecrireLExport(uri)
     }
+    private val sauvegarde by lazy { org.unicornradio.app.fichier.Sauvegarde(this) }
+    private val creerLaSauvegarde = registerForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
+        if (uri != null) {
+            sauvegarde.regler(uri)
+            sauvegarder(aLaMain = true)
+        }
+    }
 
     private val demanderNotification = registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
 
@@ -261,6 +271,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        ouvrirLesFavoris = savedInstanceState == null
         setContentView(R.layout.activity_main)
         fichiers = Fichiers(this)
         serveur = Serveur(this)
@@ -342,13 +353,15 @@ class MainActivity : AppCompatActivity() {
         barre.overflowIcon?.setTint(getColor(R.color.icone_barre))
         barre.setOnMenuItemClickListener {
             when (it.itemId) {
-                R.id.importer -> { choisirUnFichier.launch(arrayOf("application/json", "application/octet-stream", "text/plain")); true }
+                R.id.importer, R.id.importerMenu -> { choisirUnFichier.launch(arrayOf("application/json", "application/octet-stream", "text/plain")); true }
                 R.id.exporter -> { exporter(); true }
                 R.id.chercher -> { entrerDansLaRecherche(); true }
                 R.id.serveur -> { ouvrirServeur.launch(Intent(this, ServeurActivity::class.java)); true }
                 R.id.viderLaListe -> { proposerDeViderLaListe(); true }
+                R.id.sauvegarde -> { montrerLaSauvegarde(); true }
                 R.id.invitation -> { montrerLInvitation(); true }
                 R.id.miseAJour -> { verifierLaMiseAJour(aLaMain = true); true }
+                R.id.aPropos -> { montrerLAPropos(); true }
                 else -> false
             }
         }
@@ -472,6 +485,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onStop() {
+        // Ce qui ne repasse pas par le rechargement de la liste, un podcast suivi par exemple, est sauvegardé en partant.
+        sauvegarder(aLaMain = false)
         Retrouver.surRemplacement = null
         minuterie.removeCallbacks(avancement)
         minuterie.removeCallbacks(ticMinuterie)
@@ -584,10 +599,63 @@ class MainActivity : AppCompatActivity() {
                     val suivant = pile.last().sousDossiers.firstOrNull { it.titre == titre } ?: break
                     pile.addLast(suivant)
                 }
+                if (ouvrirLesFavoris && pile.size == 1) racines.firstOrNull { it.mesFavoris }?.let { pile.addLast(it) }
             }
+            ouvrirLesFavoris = false
             if (!modeRecherche) afficher()
             if (verses > 0 && serveur.apparie) tirer()
+            sauvegarder(aLaMain = false)
         }
+    }
+
+    // ---- La sauvegarde automatique ----
+
+    /**
+     * Ma liste écrite à l'emplacement choisi, si elle a changé ; à chaque
+     * rechargement de la liste, donc après chaque geste, import ou
+     * synchronisation, et en quittant l'écran. Sans emplacement et sans
+     * serveur, un rappel discret, une seule fois, dès que la liste existe.
+     */
+    private fun sauvegarder(aLaMain: Boolean) {
+        lifecycleScope.launch {
+            if (!sauvegarde.reglee) {
+                if (!serveur.apparie && withContext(Dispatchers.IO) { maListe.charger()?.let { it.nombreDeStations > 0 || it.podcasts.isNotEmpty() } == true } &&
+                    sauvegarde.rappelAFaire()
+                ) Toast.makeText(this@MainActivity, R.string.sauvegarde_rappel, Toast.LENGTH_LONG).show()
+                return@launch
+            }
+            when (withContext(Dispatchers.IO) { sauvegarde.ecrire(maListe.section(), force = aLaMain) }) {
+                org.unicornradio.app.fichier.Sauvegarde.Issue.ECRITE ->
+                    if (aLaMain) Toast.makeText(this@MainActivity, getString(R.string.sauvegarde_faite, sauvegarde.nom), Toast.LENGTH_LONG).show()
+                org.unicornradio.app.fichier.Sauvegarde.Issue.EN_PANNE ->
+                    Toast.makeText(this@MainActivity, getString(R.string.sauvegarde_en_panne, sauvegarde.nom), Toast.LENGTH_LONG).show()
+                else -> {}
+            }
+        }
+    }
+
+    /** « Sauvegarde automatique… » : choisir l'emplacement, ou voir où et quand, sauvegarder, changer, arrêter. */
+    private fun montrerLaSauvegarde() {
+        val boite = MaterialAlertDialogBuilder(this).setTitle(R.string.sauvegarde_automatique)
+        if (!sauvegarde.reglee) {
+            boite.setMessage(R.string.sauvegarde_explication)
+                .setNegativeButton(R.string.invitation_fermer, null)
+                .setPositiveButton(R.string.sauvegarde_choisir) { _, _ -> creerLaSauvegarde.launch("unicorn-radio-sauvegarde.json") }
+                .show()
+            return
+        }
+        val quand = if (sauvegarde.le > 0) java.text.DateFormat.getDateTimeInstance(java.text.DateFormat.MEDIUM, java.text.DateFormat.SHORT).format(Date(sauvegarde.le))
+        else getString(R.string.sauvegarde_jamais)
+        val texte = getString(R.string.sauvegarde_etat, sauvegarde.nom, quand) +
+            if (sauvegarde.enPanne) "\n\n" + getString(R.string.sauvegarde_a_regler) else ""
+        boite.setMessage(texte)
+            .setPositiveButton(R.string.sauvegarde_maintenant) { _, _ -> sauvegarder(aLaMain = true) }
+            .setNegativeButton(R.string.sauvegarde_changer) { _, _ -> creerLaSauvegarde.launch("unicorn-radio-sauvegarde.json") }
+            .setNeutralButton(R.string.sauvegarde_arreter) { _, _ ->
+                sauvegarde.arreter()
+                Toast.makeText(this, R.string.sauvegarde_arretee, Toast.LENGTH_SHORT).show()
+            }
+            .show()
     }
 
     /** Les fichiers gardés par les versions d'avant la 1.1.0 : versés dans ma liste comme autant de gestes, puis oubliés. Rend les stations ajoutées. */
@@ -786,6 +854,7 @@ class MainActivity : AppCompatActivity() {
         val apparie = serveur.apparie
         // La loupe, l'import et l'export sont de l'onglet Radio ; vider la liste, de la liste de lecture ouverte.
         barre.menu.findItem(R.id.importer).isVisible = onglet == Onglet.RADIO
+        barre.menu.findItem(R.id.importerMenu).isVisible = onglet == Onglet.RADIO
         barre.menu.findItem(R.id.exporter).isVisible = onglet == Onglet.RADIO
         barre.menu.findItem(R.id.chercher).isVisible = onglet == Onglet.RADIO
         barre.menu.findItem(R.id.viderLaListe).isVisible = !modeRecherche && onglet == Onglet.PODCASTS && podcastOuvert == null && fileOuverte
@@ -969,7 +1038,7 @@ class MainActivity : AppCompatActivity() {
         val actions = ArrayList<Pair<String, () -> Unit>>()
         actions += getString(if (favorite) R.string.retirer_des_favoris else R.string.ajouter_aux_favoris) to { etoiler(station) }
         actions += getString(R.string.ranger_dans) to {
-            choisirUnDossier(R.string.ranger_dans, exclure = dossier) { chemin ->
+            choisirUnDossier(R.string.ranger_dans, station) { chemin ->
                 agir(
                     message = getString(R.string.rangee_dans, chemin.last(), station.nom),
                     surJournal = { it.dossierAjouter(chemin, station) },
@@ -978,7 +1047,7 @@ class MainActivity : AppCompatActivity() {
         }
         if (dossier != null) {
             actions += getString(R.string.deplacer_vers) to {
-                choisirUnDossier(R.string.deplacer_vers, exclure = dossier) { vers ->
+                choisirUnDossier(R.string.deplacer_vers, station) { vers ->
                     agir(
                         message = getString(R.string.rangee_dans, vers.last(), station.nom),
                         surJournal = { it.dossierDeplacer(dossier, station.uuid, vers) },
@@ -1070,15 +1139,60 @@ class MainActivity : AppCompatActivity() {
             setPadding(marge, marge, marge, 0)
             adjustViewBounds = true
         }
+        val cadre = android.widget.LinearLayout(this).apply {
+            orientation = android.widget.LinearLayout.VERTICAL
+            addView(image)
+            addView(ligneDesTelechargements())
+        }
         MaterialAlertDialogBuilder(this)
             .setTitle(R.string.invitation_qrcode)
             .setMessage(getString(R.string.invitation_texte, adresse))
-            .setView(image)
+            .setView(cadre)
             .setNegativeButton(R.string.invitation_fermer, null)
             .setPositiveButton(R.string.envoyer_le_lien) { _, _ ->
                 val envoi = Intent(Intent.ACTION_SEND).setType("text/plain")
                     .putExtra(Intent.EXTRA_TEXT, getString(R.string.invitation_message, adresse))
                 startActivity(Intent.createChooser(envoi, getString(R.string.envoyer_le_lien)))
+            }
+            .show()
+    }
+
+    /**
+     * « Déjà téléchargée N fois » : une ligne cachée, montrée quand GitHub a
+     * donné le total ; sans réseau, elle reste cachée. Pour l'invitation et « À propos ».
+     */
+    private fun ligneDesTelechargements(): TextView {
+        val marge = (resources.displayMetrics.density * 16).toInt()
+        val compte = TextView(this).apply {
+            gravity = android.view.Gravity.CENTER
+            setPadding(marge, marge / 2, marge, 0)
+            visibility = View.GONE
+        }
+        lifecycleScope.launch {
+            val total = withContext(Dispatchers.IO) {
+                try { org.unicornradio.app.miseajour.MiseAJour(this@MainActivity).telechargements() } catch (e: Exception) { null }
+            }
+            if (total != null && total > 0) {
+                compte.text = resources.getQuantityString(R.plurals.invitation_telechargements, total, total)
+                compte.visibility = View.VISIBLE
+            }
+        }
+        return compte
+    }
+
+    /** « À propos » : ce que fait l'application, sans compte, sans collecte, à qui elle parle, la licence, le compteur. */
+    private fun montrerLAPropos() {
+        MaterialAlertDialogBuilder(this)
+            .setTitle(getString(R.string.app_name) + " " + BuildConfig.VERSION_NAME)
+            .setMessage(R.string.a_propos_texte)
+            .setView(ligneDesTelechargements())
+            .setNegativeButton(R.string.invitation_fermer, null)
+            .setPositiveButton(R.string.code_source) { _, _ ->
+                try {
+                    startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/Lestat2Lioncourt/unicorn-radio")))
+                } catch (e: Exception) {
+                    Log.w(Fichiers.JOURNAL, "à propos : pas de navigateur : ${e.message}")
+                }
             }
             .show()
     }
@@ -1105,13 +1219,23 @@ class MainActivity : AppCompatActivity() {
      * Mes dossiers par leur chemin, « Musique / Jazz », et « Nouveau
      * dossier… » en bas, créé dans le dossier où l'on est, sinon à la racine.
      */
-    private fun choisirUnDossier(titre: Int, exclure: List<String>?, action: (List<String>) -> Unit) {
-        val dossiers = (maListe.charger()?.tousLesDossiers() ?: emptyList())
-            .filter { it.chemin != null && it.chemin != exclure }
+    /**
+     * Tous mes dossiers, pour ranger ou déplacer une station : ceux qui la
+     * contiennent déjà, celui où l'on est compris, en gris et sans effet.
+     */
+    private fun choisirUnDossier(titre: Int, station: Station, action: (List<String>) -> Unit) {
+        val dossiers = (maListe.charger()?.tousLesDossiers() ?: emptyList()).filter { it.chemin != null }
+        val dejaLa = dossiers.map { d -> d.stations.any { it.uuid == station.uuid } }
         val noms = dossiers.map { it.chemin!!.joinToString(" / ") } + getString(R.string.nouveau_dossier)
+        val liste = object : ArrayAdapter<String>(this, android.R.layout.select_dialog_item, noms) {
+            override fun areAllItemsEnabled() = false
+            override fun isEnabled(position: Int) = !(dejaLa.getOrNull(position) ?: false)
+            override fun getView(position: Int, convertView: View?, parent: android.view.ViewGroup): View =
+                super.getView(position, convertView, parent).apply { alpha = if (isEnabled(position)) 1f else 0.38f }
+        }
         MaterialAlertDialogBuilder(this)
             .setTitle(titre)
-            .setItems(noms.toTypedArray()) { _, i ->
+            .setAdapter(liste) { _, i ->
                 if (i < dossiers.size) action(dossiers[i].chemin!!)
                 else demanderUnNom(R.string.nouveau_dossier) { nom -> action((noeudAMoi?.chemin ?: emptyList()) + nom) }
             }

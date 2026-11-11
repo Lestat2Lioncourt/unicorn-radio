@@ -137,10 +137,30 @@
         <item quantity="one">%d change refused by the server</item>
         <item quantity="other">%d changes refused by the server</item>
     </plurals>
+    <string name="sauvegarde_automatique">Automatic backup…</string>
+    <string name="sauvegarde_explication">Your list is written to a file at a place you choose once, then updated by itself at each change.\n\nPrefer an online storage space rather than the phone itself: if the phone is lost, the list is not. On another phone, “Import a list…” brings it back.</string>
+    <string name="sauvegarde_choisir">Choose the place…</string>
+    <string name="sauvegarde_etat">Written to: %1$s\nLast backup: %2$s</string>
+    <string name="sauvegarde_jamais">never</string>
+    <string name="sauvegarde_a_regler">The last backup failed: this place is no longer reachable. Choose it again.</string>
+    <string name="sauvegarde_maintenant">Back up now</string>
+    <string name="sauvegarde_changer">Change place…</string>
+    <string name="sauvegarde_arreter">Stop</string>
+    <string name="sauvegarde_arretee">Automatic backup stopped</string>
+    <string name="sauvegarde_faite">List backed up to %s</string>
+    <string name="sauvegarde_en_panne">Backup impossible to %s. See “Automatic backup…” in the menu.</string>
+    <string name="sauvegarde_rappel">Tip: “Automatic backup…” in the menu keeps your list safe outside the phone.</string>
     <string name="invitation_qrcode">QR code invitation</string>
     <string name="invitation_texte">Scan to get the app:\n%s</string>
     <string name="invitation_message">Unicorn-Radio, web radios and podcasts for Android: %s</string>
     <string name="invitation_fermer">Close</string>
+    <string name="a_propos">About</string>
+    <string name="code_source">Source code</string>
+    <string name="a_propos_texte">Web radios and podcasts: search the free Radio Browser directory and the podcast directory, keep favourites and folders, listen in the background, download episodes.\n\nNo account, no sign-in. No data collection: the app sends nothing about you. It only talks to Radio Browser (which counts anonymously how often each station is played), to the podcast directory, to the stations and podcasts you play, to GitHub for updates, and to your Unicorn-TV server if you pair one.\n\nFree software, GPL-3.0 licence.</string>
+    <plurals name="invitation_telechargements">
+        <item quantity="one">Already downloaded %d time</item>
+        <item quantity="other">Already downloaded %d times</item>
+    </plurals>
     <string name="envoyer_le_lien">Send the link</string>
     <string name="mise_a_jour_menu">Check for updates…</string>
     <string name="version_disponible">Version %s available</string>

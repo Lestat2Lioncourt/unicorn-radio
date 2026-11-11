@@ -69,7 +69,7 @@ Décidés le 2026-11-11, en pensant d'abord à qui n'a que le téléphone.
    « précédent » revient au dernier épisode passé, « suivant » va au
    premier à suivre ; les deux boutons sur la ligne de lecture de l'écran,
    pour les stations aussi. **Fait le 2026-11-11 (022).**
-3. **La sauvegarde automatique de la liste** : le fichier d'export écrit de
+3. **La sauvegarde automatique de la liste** (024, fait le 2026-11-11) : le fichier d'export écrit de
    lui-même à un emplacement choisi une fois, à chaque changement ; un
    téléphone perdu n'emporte plus la liste. Cadre décidé le 2026-11-11 :
    - aucune question imposée, rien de redemandé tant que rien n'est choisi ;

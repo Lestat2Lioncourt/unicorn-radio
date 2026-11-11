@@ -24,7 +24,11 @@
         android:title="@string/langue"
         app:actionLayout="@layout/drapeaux"
         app:showAsAction="always" />
-    <!-- Dans les trois points : exporter, vider la liste de lecture quand elle est ouverte, la mise à jour. -->
+    <!-- Dans les trois points : importer (aussi en icône), exporter, vider la liste de lecture quand elle est ouverte, la mise à jour. -->
+    <item
+        android:id="@+id/importerMenu"
+        android:title="@string/importer_une_liste"
+        app:showAsAction="never" />
     <item
         android:id="@+id/exporter"
         android:title="@string/exporter_mes_radios"
@@ -35,11 +39,19 @@
         android:visible="false"
         app:showAsAction="never" />
     <item
+        android:id="@+id/sauvegarde"
+        android:title="@string/sauvegarde_automatique"
+        app:showAsAction="never" />
+    <item
         android:id="@+id/invitation"
         android:title="@string/invitation_qrcode"
         app:showAsAction="never" />
     <item
         android:id="@+id/miseAJour"
         android:title="@string/mise_a_jour_menu"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/aPropos"
+        android:title="@string/a_propos"
         app:showAsAction="never" />
 </menu>

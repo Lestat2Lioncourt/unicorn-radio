@@ -60,7 +60,38 @@ class MiseAJour(contexte: Context) {
         }
     }
 
+    /**
+     * Le total des téléchargements des APK de toutes les releases, ce que
+     * GitHub compte, mises à jour comprises ; `null` si GitHub ne répond pas.
+     */
+    fun telechargements(): Int? {
+        val c = URL(TOUTES_LES_RELEASES).openConnection() as HttpURLConnection
+        c.connectTimeout = DELAI_MS
+        c.readTimeout = DELAI_MS
+        c.setRequestProperty("User-Agent", USER_AGENT)
+        c.setRequestProperty("Accept", "application/vnd.github+json")
+        return try {
+            if (c.responseCode != 200) return null
+            val releases = org.json.JSONArray(c.inputStream.bufferedReader(Charsets.UTF_8).use { it.readText() })
+            var total = 0
+            for (i in 0 until releases.length()) {
+                val pieces = releases.optJSONObject(i)?.optJSONArray("assets") ?: continue
+                for (j in 0 until pieces.length()) {
+                    val p = pieces.optJSONObject(j) ?: continue
+                    if (p.optString("name").endsWith(".apk")) total += p.optInt("download_count")
+                }
+            }
+            total
+        } catch (e: Exception) {
+            tracer("téléchargements illisibles : ${e.message}")
+            null
+        } finally {
+            c.disconnect()
+        }
+    }
+
     companion object {
+        private const val TOUTES_LES_RELEASES = "https://api.github.com/repos/Lestat2Lioncourt/unicorn-radio/releases?per_page=100"
         const val PAGE_DES_RELEASES = "https://github.com/Lestat2Lioncourt/unicorn-radio/releases"
         private const val DERNIERE_RELEASE = "https://api.github.com/repos/Lestat2Lioncourt/unicorn-radio/releases/latest"
         private const val USER_AGENT = "Unicorn-Radio/${BuildConfig.VERSION_NAME} (https://github.com/Lestat2Lioncourt/unicorn-radio)"
