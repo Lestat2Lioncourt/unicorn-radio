@@ -3,6 +3,12 @@
 Une entrée par chantier, la plus récente en tête. Le détail de chacun est
 dans `correctifs/`.
 
+## 2026-11-11 — 023 · Invitation QRCode
+
+Dans le menu « … », « Invitation QRCode » montre le QR code de la page de
+la dernière version, pour donner l'application à quelqu'un qu'on croise ;
+« Envoyer le lien » ouvre le partage d'Android.
+
 ## 2026-11-11 — 022 · Précédent et suivant
 
 Pendant un épisode, le lecteur porte toute la liste de lecture :

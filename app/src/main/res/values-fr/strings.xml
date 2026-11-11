@@ -135,6 +135,11 @@
         <item quantity="one">%d changement refusé par le serveur</item>
         <item quantity="other">%d changements refusés par le serveur</item>
     </plurals>
+    <string name="invitation_qrcode">Invitation QRCode</string>
+    <string name="invitation_texte">À scanner pour installer l\'application :\n%s</string>
+    <string name="invitation_message">Unicorn-Radio, radios web et podcasts pour Android : %s</string>
+    <string name="invitation_fermer">Fermer</string>
+    <string name="envoyer_le_lien">Envoyer le lien</string>
     <string name="mise_a_jour_menu">Mise à jour…</string>
     <string name="version_disponible">Version %s disponible</string>
     <string name="installer">Installer</string>

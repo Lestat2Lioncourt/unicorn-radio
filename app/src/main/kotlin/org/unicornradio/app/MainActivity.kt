@@ -347,6 +347,7 @@ class MainActivity : AppCompatActivity() {
                 R.id.chercher -> { entrerDansLaRecherche(); true }
                 R.id.serveur -> { ouvrirServeur.launch(Intent(this, ServeurActivity::class.java)); true }
                 R.id.viderLaListe -> { proposerDeViderLaListe(); true }
+                R.id.invitation -> { montrerLInvitation(); true }
                 R.id.miseAJour -> { verifierLaMiseAJour(aLaMain = true); true }
                 else -> false
             }
@@ -1047,6 +1048,39 @@ class MainActivity : AppCompatActivity() {
                 c.play()
             }
         }
+    }
+
+    /**
+     * « Invitation QRCode » : l'adresse de la dernière version, en QR code à
+     * faire scanner par quelqu'un qu'on croise, sur fond blanc pour se lire
+     * en thème sombre aussi ; « Envoyer le lien » pour qui n'est pas en face.
+     */
+    private fun montrerLInvitation() {
+        val adresse = "https://github.com/Lestat2Lioncourt/unicorn-radio/releases/latest"
+        val cote = (resources.displayMetrics.density * 260).toInt()
+        val code = try {
+            com.journeyapps.barcodescanner.BarcodeEncoder().encodeBitmap(adresse, com.google.zxing.BarcodeFormat.QR_CODE, cote, cote)
+        } catch (e: Exception) {
+            Log.w(Fichiers.JOURNAL, "invitation : QR code impossible : ${e.message}")
+            null
+        }
+        val marge = (resources.displayMetrics.density * 16).toInt()
+        val image = ImageView(this).apply {
+            setImageBitmap(code)
+            setPadding(marge, marge, marge, 0)
+            adjustViewBounds = true
+        }
+        MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.invitation_qrcode)
+            .setMessage(getString(R.string.invitation_texte, adresse))
+            .setView(image)
+            .setNegativeButton(R.string.invitation_fermer, null)
+            .setPositiveButton(R.string.envoyer_le_lien) { _, _ ->
+                val envoi = Intent(Intent.ACTION_SEND).setType("text/plain")
+                    .putExtra(Intent.EXTRA_TEXT, getString(R.string.invitation_message, adresse))
+                startActivity(Intent.createChooser(envoi, getString(R.string.envoyer_le_lien)))
+            }
+            .show()
     }
 
     /** Dans le presse-papiers ; depuis Android 13, le système le dit lui-même. */

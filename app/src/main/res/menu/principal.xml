@@ -35,6 +35,10 @@
         android:visible="false"
         app:showAsAction="never" />
     <item
+        android:id="@+id/invitation"
+        android:title="@string/invitation_qrcode"
+        app:showAsAction="never" />
+    <item
         android:id="@+id/miseAJour"
         android:title="@string/mise_a_jour_menu"
         app:showAsAction="never" />
