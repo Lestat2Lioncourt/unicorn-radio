@@ -1,0 +1,15 @@
+[FR] Retrouver une station, précédent et suivant
+
+Une station qui ne démarre plus est redemandée à l'annuaire : si son adresse ou son identifiant a changé, la lecture repart et vos favoris et dossiers suivent
+Sinon, un message dit pourquoi elle ne joue pas
+Appui long sur une station de vos listes : « Retrouver dans l'annuaire… » pour choisir la bonne parmi celles du même nom
+Boutons précédent et suivant sur la ligne de lecture
+Pendant un podcast, précédent et suivant passent d'un épisode à l'autre de la liste de lecture, repris où vous l'aviez laissé, aussi depuis la notification et le casque
+
+[EN] Find a station again, previous and next
+
+A station that no longer starts is looked up again in the directory: if its address or identifier changed, playback resumes and your favourites and folders follow
+Otherwise, a message says why it does not play
+Long-press a station in your lists: "Find again in the directory…" to pick the right one among those with the same name
+Previous and next buttons on the playback bar
+During a podcast, previous and next move through the listening list, resumed where you left off, also from the notification and headset
