@@ -38,8 +38,16 @@ que la note ait été montrée et acceptée.
 ### 1. Les deux numéros de version
 
 Dans `app/build.gradle.kts` : `versionName = "X.Y.Z"` et `versionCode`,
-entier qui **monte de un à chaque publication** ; Android refuse d'installer
-par-dessus un `versionCode` égal ou plus petit.
+entier qui **monte de un à chaque APK**, essai ou release ; Android refuse
+d'installer par-dessus un `versionCode` égal ou plus petit.
+
+**La règle des numéros**, décidée le 2026-11-11 : l'APK d'essai d'une
+version porte un numéro en `.0` (1.2.0), la release le même numéro en `.1`
+(1.2.1), avec un `versionCode` plus grand. Le téléphone qui a l'essai voit
+donc la release comme plus récente, et la mise à jour lui est proposée.
+La version suivante repart du numéro mineur au-dessus (1.3.0, puis
+1.3.1). Un second essai avant la release prend un quatrième chiffre
+(1.2.0.1, puis 1.2.0.2). La 1.2.x regroupe ce qui est venu depuis la 1.1.0.
 
 ### 2. Le commit de version
 
