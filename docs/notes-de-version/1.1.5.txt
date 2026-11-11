@@ -1,0 +1,9 @@
+[FR] Invitation QRCode
+
+Dans le menu « … », « Invitation QRCode » affiche un QR code à faire scanner pour donner l'application à quelqu'un
+« Envoyer le lien » le partage par message à qui n'est pas en face
+
+[EN] QR code invitation
+
+In the "…" menu, "QR code invitation" shows a QR code to scan, to give the app to someone
+"Send the link" shares it by message with someone who is not next to you
