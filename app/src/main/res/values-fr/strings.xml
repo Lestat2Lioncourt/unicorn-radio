@@ -21,6 +21,8 @@
     <string name="lecteur_pas_pret">Le lecteur n\'est pas encore prêt</string>
     <string name="lire">Lire</string>
     <string name="pause">Pause</string>
+    <string name="precedent">Précédent</string>
+    <string name="suivant">Suivant</string>
     <string name="chercher">Chercher dans l\'annuaire</string>
     <string name="annuaire">Annuaire</string>
     <string name="recherche_indice">Nom de la station</string>
@@ -170,4 +172,15 @@
     <string name="telechargement_episode">Téléchargement de : %s</string>
     <string name="telechargement_impossible">Téléchargement impossible : %s</string>
     <string name="telechargement_supprime">Téléchargement supprimé : %s</string>
+    <!-- Une station que l'annuaire a refaite (021). -->
+    <string name="retrouver_dans_l_annuaire">Retrouver dans l\'annuaire…</string>
+    <string name="retrouver_titre">Quelle station est « %s » ?</string>
+    <string name="retrouver_rien">Aucune station nommée « %s » dans l\'annuaire.</string>
+    <string name="station_remplacee">« %1$s » remplacée par « %2$s » : favoris et dossiers suivent.</string>
+    <string name="station_adresse_suivie">« %s » : nouvelle adresse du flux, la lecture reprend.</string>
+    <string name="station_identifiant_suivi">« %s » a changé d\'identifiant dans l\'annuaire : favoris et dossiers suivent.</string>
+    <string name="station_meme_adresse">« %s » ne répond pas. L\'annuaire ne connaît pas d\'autre adresse.</string>
+    <string name="station_disparue_aucune">« %s » n\'est plus dans l\'annuaire, et aucune station ne porte ce nom.</string>
+    <string name="station_disparue_plusieurs">« %1$s » n\'est plus dans l\'annuaire. %2$d stations portent ce nom : appui long sur la station pour la retrouver.</string>
+    <string name="station_annuaire_injoignable">« %s » ne répond pas, et l\'annuaire non plus.</string>
 </resources>

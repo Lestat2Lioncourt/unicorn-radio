@@ -5,6 +5,7 @@ import android.content.Intent
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
+import android.widget.Toast
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
@@ -22,7 +23,9 @@ import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
 import org.unicornradio.app.BuildConfig
 import org.unicornradio.app.MainActivity
+import org.unicornradio.app.R
 import org.unicornradio.app.annuaire.Annuaire
+import org.unicornradio.app.annuaire.Retrouver
 import org.unicornradio.app.fichier.Fichiers
 import org.unicornradio.app.podcasts.CLEF_DUREE
 import org.unicornradio.app.podcasts.CLEF_FLUX
@@ -69,6 +72,7 @@ class ServiceLecture : MediaSessionService() {
         lecteur.addListener(Journal)
         lecteur.addListener(suivi)
         lecteur.addListener(titres)
+        lecteur.addListener(reprise)
 
         val ouvrir = PendingIntent.getActivity(
             this, 0, Intent(this, MainActivity::class.java),
@@ -135,6 +139,69 @@ class ServiceLecture : MediaSessionService() {
         }
     }
 
+    // ---- Une station que l'annuaire a refaite ----
+
+    /** Les stations déjà redemandées à l'annuaire depuis le dernier changement d'élément : une fois chacune, pas de boucle. */
+    private val redemandees = HashSet<String>()
+
+    /**
+     * Une station qui ne démarre pas : l'annuaire est consulté une fois. Une
+     * autre adresse, ou une seule station de même nom sous un autre
+     * identifiant, et la lecture repart avec elle, la fiche remplacée dans
+     * mes listes (`Retrouver`) ; sinon, ce que l'annuaire a dit, en message.
+     */
+    private val reprise = object : Player.Listener {
+        override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
+            redemandees.clear()
+        }
+
+        override fun onPlayerError(error: PlaybackException) {
+            val p = session?.player ?: return
+            val item = p.currentMediaItem ?: return
+            if (item.estUnEpisode) return
+            val uuid = item.mediaId
+            if (!redemandees.add(uuid)) return
+            val nom = item.mediaMetadata.station?.toString() ?: return
+            val url = item.localConfiguration?.uri?.toString() ?: return
+            val pays = item.mediaMetadata.extras?.getString(CLEF_PAYS)
+            Thread {
+                val verdict = Retrouver.chercher(uuid, nom, url, pays)
+                main.post {
+                    val nouvelle = when (verdict) {
+                        is Retrouver.Verdict.Adresse -> verdict.nouvelle
+                        is Retrouver.Verdict.Identifiant -> verdict.nouvelle
+                        else -> null
+                    }
+                    if (nouvelle != null) {
+                        Thread { Retrouver.appliquer(applicationContext, uuid, nouvelle) }.start()
+                        val lecteur = session?.player
+                        if (lecteur != null && lecteur.currentMediaItem?.mediaId == uuid) {
+                            Log.i(Fichiers.JOURNAL, "retrouver : « $nom » repart à ${nouvelle.url}")
+                            lecteur.replaceMediaItem(lecteur.currentMediaItemIndex, nouvelle.versElement())
+                            lecteur.prepare()
+                            lecteur.play()
+                        }
+                    }
+                    dire(
+                        when (verdict) {
+                            is Retrouver.Verdict.Adresse -> getString(R.string.station_adresse_suivie, nom)
+                            is Retrouver.Verdict.Identifiant -> getString(R.string.station_identifiant_suivi, nom)
+                            is Retrouver.Verdict.MemeAdresse -> getString(R.string.station_meme_adresse, nom)
+                            is Retrouver.Verdict.Disparue ->
+                                if (verdict.homonymes == 0) getString(R.string.station_disparue_aucune, nom)
+                                else getString(R.string.station_disparue_plusieurs, nom, verdict.homonymes)
+                            is Retrouver.Verdict.Injoignable -> getString(R.string.station_annuaire_injoignable, nom)
+                        },
+                    )
+                }
+            }.start()
+        }
+    }
+
+    private fun dire(texte: String) {
+        Toast.makeText(applicationContext, texte, Toast.LENGTH_LONG).show()
+    }
+
     // ---- Où l'on en est d'un épisode ----
 
     private val main = Handler(Looper.getMainLooper())
@@ -157,8 +224,22 @@ class ServiceLecture : MediaSessionService() {
     private val suivi = object : Player.Listener {
         /** Un épisode qui démarre, à la main ou à la suite du précédent : la liste de lecture le note, tout de suite, avant que l'écran ne relise. */
         override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
-            val e = mediaItem?.episode ?: return
-            fileDEcoute.noterLeDepart(e)
+            if (mediaItem?.episode == null) return
+            val p = session?.player ?: return
+            val elements = (0 until p.mediaItemCount).map { p.getMediaItemAt(it) }
+            val ici = p.currentMediaItemIndex
+            fileDEcoute.suivreLeLecteur(
+                elements.take(ici + 1).mapNotNull { it.episode },
+                elements.drop(ici + 1).mapNotNull { it.episode },
+            )
+            // Arrivé par « précédent », « suivant » ou à la fin du précédent : repris où on l'avait laissé, s'il n'est pas fini.
+            if (reason == Player.MEDIA_ITEM_TRANSITION_REASON_SEEK || reason == Player.MEDIA_ITEM_TRANSITION_REASON_AUTO) {
+                val extras = mediaItem.mediaMetadata.extras ?: return
+                val flux = extras.getString(CLEF_FLUX) ?: return
+                val guid = extras.getString(CLEF_GUID) ?: return
+                val ecoute = ecoutes.pour(flux)[guid] ?: return
+                if (!ecoute.termine && ecoute.position > 0) p.seekTo(ecoute.position * 1_000)
+            }
         }
 
         override fun onIsPlayingChanged(isPlaying: Boolean) {

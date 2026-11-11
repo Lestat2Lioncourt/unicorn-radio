@@ -44,11 +44,14 @@ class FileDEcoute(contexte: Context) {
         ecrire(passes.filter { it.clef != clef }, suite.filter { it.clef != clef })
     }
 
-    /** Un épisode démarre : il sort de ceux à suivre et passe en fin des passés, une seule fois. */
-    fun noterLeDepart(e: Episode) = synchronized(VERROU) {
-        val (passes, suite) = lire()
-        val nouveaux = (passes.filter { it.clef != e.clef } + e).takeLast(PASSES_MAX)
-        ecrire(nouveaux, suite.filter { it.clef != e.clef })
+    /**
+     * Un épisode démarre, en avançant ou en reculant : la liste prend l'ordre
+     * du lecteur, qui porte toute la liste pendant un épisode. Les passés
+     * sont ce qui précède, l'épisode en cours à leur fin ; à suivre, ce qui
+     * suit. Reculer remet donc en tête d'« à suivre » l'épisode qu'on quitte.
+     */
+    fun suivreLeLecteur(jusquAuCourant: List<Episode>, suite: List<Episode>) = synchronized(VERROU) {
+        ecrire(jusquAuCourant.takeLast(PASSES_MAX), suite)
     }
 
     fun vider() = synchronized(VERROU) { ecrire(emptyList(), emptyList()) }

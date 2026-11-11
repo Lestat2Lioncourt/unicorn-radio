@@ -32,10 +32,15 @@ class MesRadios(private val contexte: Context, private val nom: String) {
     val existe: Boolean
         get() = fichier.exists()
 
+    /** La génération du fichier que cette instance a lue ; une autre instance a écrit depuis quand elle diffère de `generation`. */
+    private var generationLue = -1
+
     /** La racine, favoris en stations et dossiers en sous-dossiers ; `null` sans fichier ou illisible. */
     @Synchronized
     fun charger(): Noeud? {
+        if (generationLue != generation) viderLaMemoire()
         racine?.let { return it }
+        generationLue = generation
         val lu = try {
             if (fichier.exists()) LectureFichier.lire(fichier.readText(), nom) else null
         } catch (e: Exception) {
@@ -138,6 +143,41 @@ class MesRadios(private val contexte: Context, private val nom: String) {
         }
         Log.i(Fichiers.JOURNAL, "$nom : « ${racine.titre} » versé, $stations stations et $podcasts podcasts ajoutés")
         return stations to podcasts
+    }
+
+    // ---- Une station refaite par l'annuaire ----
+
+    /** Où une station était : dans les favoris, et dans quels dossiers. */
+    class Emplacements(val favorite: Boolean, val dossiers: List<List<String>>)
+
+    /**
+     * La nouvelle fiche à la place de l'ancienne, même rang, dans les favoris
+     * et chaque dossier qui la citait ; si la nouvelle y était déjà sous son
+     * identifiant, l'ancienne tombe seulement. Rend où l'ancienne était.
+     */
+    @Synchronized
+    fun remplacerLaStation(ancien: String, nouvelle: Station): Emplacements {
+        var favorite = false
+        val dossiersTouches = ArrayList<List<String>>()
+        modifier { s ->
+            favorite = s.favoris().remplacer(ancien, nouvelle)
+            val dossiers = s.dossiers()
+            for (i in 0 until dossiers.length()) {
+                val d = dossiers.optJSONObject(i) ?: continue
+                if (d.stationsDe().remplacer(ancien, nouvelle)) d.cheminDe()?.let { dossiersTouches += it }
+            }
+        }
+        return Emplacements(favorite, dossiersTouches)
+    }
+
+    /** Dans ce tableau : la fiche de l'ancien identifiant remplacée, ou retirée si la nouvelle y est déjà. Vrai si l'ancienne y était. */
+    private fun JSONArray.remplacer(ancien: String, nouvelle: Station): Boolean {
+        val i = indexDeStation(ancien)
+        if (i < 0) return false
+        val ordre = optJSONObject(i)?.optInt("ordre", i) ?: i
+        if (nouvelle.uuid != ancien && indexDeStation(nouvelle.uuid) >= 0) remove(i)
+        else put(i, EcritureFichier.fiche(nouvelle, ordre))
+        return true
     }
 
     // ---- Les favoris ----
@@ -275,7 +315,14 @@ class MesRadios(private val contexte: Context, private val nom: String) {
 
     // ---- Le fichier ----
 
+    /** Ce qui était en mémoire ne vaut plus : le fichier a changé. Compté pour que les autres instances, écran ou service, relisent. */
     private fun oublier() {
+        viderLaMemoire()
+        generation++
+    }
+
+    /** Relire au prochain `charger`, sans rien signaler aux autres. */
+    private fun viderLaMemoire() {
         racine = null
         favorisUuid = null
         podcastsFlux = null
@@ -338,6 +385,10 @@ class MesRadios(private val contexte: Context, private val nom: String) {
     }
 
     companion object {
+        /** Monte à chaque écriture, par n'importe quelle instance du processus ; `charger` relit quand elle a bougé. */
+        @Volatile
+        private var generation = 0
+
         /** La copie du serveur. */
         const val COPIE = "mes-radios.json"
         /** La liste locale de qui n'a pas de serveur : ses favoris et, depuis le 007, ses dossiers. */

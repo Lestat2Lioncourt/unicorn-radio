@@ -56,6 +56,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.unicornradio.app.annuaire.Annuaire
+import org.unicornradio.app.annuaire.Retrouver
 import org.unicornradio.app.fichier.EcritureFichier
 import org.unicornradio.app.fichier.Fichiers
 import org.unicornradio.app.fichier.LectureFichier
@@ -121,6 +122,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var lectureNom: TextView
     private lateinit var lectureEtat: TextView
     private lateinit var lectureBouton: ImageButton
+    private lateinit var lecturePrecedent: ImageButton
+    private lateinit var lectureSuivant: ImageButton
     private lateinit var lectureMinuterie: View
     private lateinit var lectureMinuterieIcone: ImageView
     private lateinit var lectureMinuterieEtat: TextView
@@ -280,6 +283,8 @@ class MainActivity : AppCompatActivity() {
         // Le défilement d'un titre trop long ne part que sur une vue « sélectionnée ».
         lectureEtat.isSelected = true
         lectureBouton = findViewById(R.id.lectureBouton)
+        lecturePrecedent = findViewById(R.id.lecturePrecedent)
+        lectureSuivant = findViewById(R.id.lectureSuivant)
         lectureMinuterie = findViewById(R.id.lectureMinuterie)
         lectureMinuterieIcone = findViewById(R.id.lectureMinuterieIcone)
         lectureMinuterieEtat = findViewById(R.id.lectureMinuterieEtat)
@@ -352,6 +357,9 @@ class MainActivity : AppCompatActivity() {
         findViewById<View>(R.id.videChercher).setOnClickListener { entrerDansLaRecherche() }
         findViewById<View>(R.id.videServeur).setOnClickListener { ouvrirServeur.launch(Intent(this, ServeurActivity::class.java)) }
         lectureBouton.setOnClickListener { basculerLecture() }
+        // L'élément d'avant ou d'après dans la file du lecteur : la liste de lecture pour un épisode, la liste d'où l'on vient pour une station.
+        lecturePrecedent.setOnClickListener { controleur?.let { c -> if (c.hasPreviousMediaItem()) { c.seekToPreviousMediaItem(); c.play() } } }
+        lectureSuivant.setOnClickListener { controleur?.let { c -> if (c.hasNextMediaItem()) { c.seekToNextMediaItem(); c.play() } } }
         lectureMinuterie.setOnClickListener { choisirLaMinuterie() }
         TooltipCompat.setTooltipText(lectureMinuterie, getString(R.string.minuterie))
         findViewById<View>(R.id.lectureTextes).setOnClickListener { surLaLigneDeLecture() }
@@ -444,6 +452,11 @@ class MainActivity : AppCompatActivity() {
             withContext(Dispatchers.IO) { telechargements.rafraichir() }
             if (onglet == Onglet.PODCASTS && !modeRecherche) afficher()
         }
+        // Le service a remplacé une fiche que l'annuaire avait refaite : les listes se relisent, et le serveur l'apprend.
+        Retrouver.surRemplacement = {
+            charger()
+            if (serveur.apparie) tirer()
+        }
         tirer()
         verifierLaMiseAJour(aLaMain = false)
     }
@@ -458,6 +471,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onStop() {
+        Retrouver.surRemplacement = null
         minuterie.removeCallbacks(avancement)
         minuterie.removeCallbacks(ticMinuterie)
         controleur?.removeListener(surLecteur)
@@ -982,11 +996,57 @@ class MainActivity : AppCompatActivity() {
         // Le site de la station, et l'adresse de son flux pour l'écouter ailleurs ou la donner, comme sur le bureau.
         station.page?.takeIf { it.isNotBlank() }?.let { page -> actions += getString(R.string.ouvrir_le_site) to { ouvrirLaPage(page) } }
         actions += getString(R.string.copier_l_adresse) to { copier(station.url) }
+        // Une station de mes listes que l'annuaire a refaite : la retrouver par son nom et choisir laquelle c'est.
+        if (ici != null && (ici.mesFavoris || dossier != null)) actions += getString(R.string.retrouver_dans_l_annuaire) to { retrouver(station) }
         MaterialAlertDialogBuilder(this)
             .setTitle(station.nom)
             .setItems(actions.map { it.first }.toTypedArray()) { _, i -> actions[i].second() }
             .show()
         return true
+    }
+
+    /**
+     * Les stations de l'annuaire qui portent ce nom, l'exact d'abord, chacune
+     * avec son pays, son codec et son débit pour les distinguer ; celle qu'on
+     * choisit remplace la fiche partout, favoris et dossiers.
+     */
+    private fun retrouver(station: Station) {
+        lifecycleScope.launch {
+            val candidates = try {
+                withContext(Dispatchers.IO) { Retrouver.candidates(station.nom) }
+            } catch (e: Exception) {
+                Toast.makeText(this@MainActivity, getString(R.string.annuaire_injoignable, e.message), Toast.LENGTH_LONG).show()
+                return@launch
+            }
+            if (candidates.isEmpty()) {
+                Toast.makeText(this@MainActivity, getString(R.string.retrouver_rien, station.nom), Toast.LENGTH_LONG).show()
+                return@launch
+            }
+            val lignes = candidates.map { c ->
+                val details = listOfNotNull(c.pays ?: c.paysCode, c.codec?.let { k -> c.debit?.let { "$k $it kb/s" } ?: k })
+                (if (c.uuid == station.uuid) "✓ " else "") + c.nom + if (details.isEmpty()) "" else "\n" + details.joinToString(" · ")
+            }
+            MaterialAlertDialogBuilder(this@MainActivity)
+                .setTitle(getString(R.string.retrouver_titre, station.nom))
+                .setItems(lignes.toTypedArray()) { _, i -> remplacer(station, candidates[i]) }
+                .setNegativeButton(android.R.string.cancel, null)
+                .show()
+        }
+    }
+
+    /** La nouvelle fiche à la place de l'ancienne partout ; si c'est la station en cours, la lecture repart avec elle. */
+    private fun remplacer(ancienne: Station, nouvelle: Station) {
+        lifecycleScope.launch {
+            withContext(Dispatchers.IO) { Retrouver.appliquer(this@MainActivity, ancienne.uuid, nouvelle) }
+            Toast.makeText(this@MainActivity, getString(R.string.station_remplacee, ancienne.nom, nouvelle.nom), Toast.LENGTH_LONG).show()
+            val c = controleur ?: return@launch
+            val i = (0 until c.mediaItemCount).firstOrNull { c.getMediaItemAt(it).mediaId == ancienne.uuid } ?: return@launch
+            c.replaceMediaItem(i, nouvelle.versElement())
+            if (i == c.currentMediaItemIndex) {
+                c.prepare()
+                c.play()
+            }
+        }
     }
 
     /** Dans le presse-papiers ; depuis Android 13, le système le dit lui-même. */
@@ -1425,7 +1485,11 @@ class MainActivity : AppCompatActivity() {
     private fun elementDe(episode: Episode) =
         episode.versElement(telechargements.fichierDe(episode)?.let { Uri.fromFile(it).toString() } ?: episode.url)
 
-    /** Un épisode dans le lecteur, repris où l'on en était s'il n'est pas terminé, et ceux à suivre derrière lui. */
+    /**
+     * Un épisode dans le lecteur, repris où l'on en était s'il n'est pas
+     * terminé ; toute la liste autour de lui, les passés devant pour que
+     * « précédent » y revienne, ceux à suivre derrière.
+     */
     private fun jouerLEpisode(episode: Episode) {
         val c = controleur
         if (c == null) {
@@ -1434,8 +1498,9 @@ class MainActivity : AppCompatActivity() {
         }
         val ecoute = ecoutesDuPodcast[episode.guid] ?: ecoutes.pour(episode.flux)[episode.guid]
         val reprise = ecoute?.takeIf { !it.termine && it.position > 0 }?.position ?: 0L
+        val passes = fileDEcoute.passes().filter { it.clef != episode.clef }
         val suite = fileDEcoute.aSuivre().filter { it.clef != episode.clef }
-        c.setMediaItems(listOf(elementDe(episode)) + suite.map { elementDe(it) }, 0, reprise * 1_000)
+        c.setMediaItems((passes + episode + suite).map { elementDe(it) }, passes.size, reprise * 1_000)
         c.prepare()
         c.play()
     }
@@ -1592,6 +1657,11 @@ class MainActivity : AppCompatActivity() {
         val enLecture = c.playWhenReady && erreur == null
         lectureBouton.setImageResource(if (enLecture) R.drawable.ic_pause else R.drawable.ic_lecture)
         lectureBouton.contentDescription = getString(if (enLecture) R.string.pause else R.string.lire)
+        // Grisés quand il n'y a rien derrière ou devant.
+        lecturePrecedent.isEnabled = c.hasPreviousMediaItem()
+        lecturePrecedent.alpha = if (lecturePrecedent.isEnabled) 1f else 0.3f
+        lectureSuivant.isEnabled = c.hasNextMediaItem()
+        lectureSuivant.alpha = if (lectureSuivant.isEnabled) 1f else 0.3f
         rafraichirLaMinuterie()
 
         lectureInitiales.text = nom.split(Regex("\\s+")).filter { it.isNotEmpty() }

@@ -55,6 +55,33 @@ Chacun utilisable seul.
   Remplace le fichier ouvert en lecture seule à côté de la liste. Décidé
   le 2026-10-27 avec le bureau, qui a les deux entrées. Fait au 015.
 
+## Les prochains chantiers, dans l'ordre
+
+Décidés le 2026-11-11, en pensant d'abord à qui n'a que le téléphone.
+
+1. **Retrouver une station** (021) : quand une station ne démarre pas, sa
+   fiche est redemandée à l'annuaire, une autre adresse fait repartir la
+   lecture, un identifiant disparu est suivi par le nom quand il est
+   unique, et chaque cas est dit. Appui long, « Retrouver dans
+   l'annuaire… » pour choisir soi-même parmi les homonymes. Le pendant du
+   232 du bureau. **Fait le 2026-11-11.**
+2. **Précédent et suivant dans la liste de lecture** : pendant un épisode,
+   « précédent » revient au dernier épisode passé, « suivant » va au
+   premier à suivre ; les deux boutons sur la ligne de lecture de l'écran,
+   pour les stations aussi. **Fait le 2026-11-11 (022).**
+3. **La sauvegarde automatique de la liste** : le fichier d'export écrit de
+   lui-même dans un dossier choisi une fois, à chaque changement ; un
+   téléphone perdu n'emporte plus la liste.
+4. **La vitesse de lecture des podcasts**, et les sauts de quinze et
+   trente secondes.
+5. **Reprendre seule au retour du réseau** : une lecture tombée sur une
+   coupure repart quand le réseau revient, sans appui.
+
+Ensuite, à voir : le réveil radio, la dernière station relancée d'un
+appui à l'ouverture, Android Auto, un widget, les titres aimés, l'import et
+l'export OPML des podcasts, le téléchargement automatique des nouveaux
+épisodes, un écran de diagnostic avec le journal.
+
 ## Plus tard, peut-être
 
 - Les podcasts : les quatre paliers sont faits, chercher et écouter (008),

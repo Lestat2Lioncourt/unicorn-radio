@@ -91,9 +91,10 @@ object Annuaire {
      * La recherche : par nom, pays et étiquette, chacun facultatif, triée par
      * votes, les stations cassées au dernier contrôle exclues.
      */
-    fun chercher(nom: String = "", paysCode: String? = null, etiquette: String? = null): List<Station> {
+    fun chercher(nom: String = "", paysCode: String? = null, etiquette: String? = null, nomExact: Boolean = false): List<Station> {
         val params = LinkedHashMap<String, String>()
         if (nom.isNotBlank()) params["name"] = nom.trim()
+        if (nom.isNotBlank() && nomExact) params["nameExact"] = "true"
         if (!paysCode.isNullOrBlank()) params["countrycode"] = paysCode
         if (!etiquette.isNullOrBlank()) {
             params["tag"] = etiquette
@@ -110,6 +111,16 @@ object Annuaire {
             liste += station(o, i) ?: continue
         }
         return liste
+    }
+
+    /** La fiche d'une station par son identifiant, telle que l'annuaire l'a aujourd'hui ; `null` s'il ne la connaît plus. */
+    fun fiche(uuid: String): Station? {
+        val tableau = JSONArray(demander("/json/stations/byuuid/" + URLEncoder.encode(uuid, "UTF-8")))
+        for (i in 0 until tableau.length()) {
+            val o = tableau.optJSONObject(i) ?: continue
+            return station(o, 0) ?: continue
+        }
+        return null
     }
 
     /** Les pays et leur nombre de stations, du plus fourni au moins. */

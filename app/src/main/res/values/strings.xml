@@ -22,6 +22,8 @@
     <string name="lecteur_pas_pret">The player is not ready yet</string>
     <string name="lire">Play</string>
     <string name="pause">Pause</string>
+    <string name="precedent">Previous</string>
+    <string name="suivant">Next</string>
     <string name="chercher">Search the directory</string>
     <string name="annuaire">Directory</string>
     <string name="recherche_indice">Station name</string>
@@ -173,6 +175,17 @@
     <string name="telechargement_episode">Downloading: %s</string>
     <string name="telechargement_impossible">Download impossible: %s</string>
     <string name="telechargement_supprime">Download deleted: %s</string>
+    <!-- Une station que l'annuaire a refaite (021). -->
+    <string name="retrouver_dans_l_annuaire">Find again in the directory…</string>
+    <string name="retrouver_titre">Which station is “%s”?</string>
+    <string name="retrouver_rien">No station named “%s” in the directory.</string>
+    <string name="station_remplacee">“%1$s” replaced by “%2$s”: favourites and folders follow.</string>
+    <string name="station_adresse_suivie">“%s”: new stream address, playback resumes.</string>
+    <string name="station_identifiant_suivi">“%s” has a new identifier in the directory: favourites and folders follow.</string>
+    <string name="station_meme_adresse">“%s” does not answer. The directory knows no other address.</string>
+    <string name="station_disparue_aucune">“%s” is no longer in the directory, and no station bears that name.</string>
+    <string name="station_disparue_plusieurs">“%1$s” is no longer in the directory. %2$d stations bear that name: long-press the station to find it again.</string>
+    <string name="station_annuaire_injoignable">“%s” does not answer, and neither does the directory.</string>
     <!-- Les noms des langues, dans leur langue : les mêmes partout. -->
     <string name="langue_francais" translatable="false">Français</string>
     <string name="langue_anglais" translatable="false">English</string>

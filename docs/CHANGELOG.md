@@ -3,6 +3,23 @@
 Une entrée par chantier, la plus récente en tête. Le détail de chacun est
 dans `correctifs/`.
 
+## 2026-11-11 — 022 · Précédent et suivant
+
+Pendant un épisode, le lecteur porte toute la liste de lecture :
+précédent et suivant passent d'un épisode à l'autre, depuis l'écran, la
+notification et le casque, et l'épisode atteint reprend à sa position. La
+liste gardée suit l'ordre du lecteur. Deux boutons sur la ligne de
+lecture, pour les stations aussi.
+
+## 2026-11-11 — 021 · Retrouver une station
+
+Une station qui ne démarre pas est redemandée à l'annuaire : une autre
+adresse de flux fait repartir la lecture, un identifiant disparu est suivi
+par le nom quand il est unique, favoris et dossiers suivent ; sinon le
+pourquoi est dit. Appui long, « Retrouver dans l'annuaire… » pour choisir
+soi-même parmi les homonymes. Le pendant du 232 du bureau, pour qui n'a
+pas de serveur ; apparié, les gestes du contrat portent le remplacement.
+
 ## 2026-11-10 — 020 · Le serveur gardé en mémoire
 
 L'adresse du serveur qui a répondu sert telle quelle, sans lui redemander
