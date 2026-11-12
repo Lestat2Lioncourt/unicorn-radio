@@ -8,23 +8,15 @@
         android:title="@string/chercher"
         app:showAsAction="always" />
     <item
-        android:id="@+id/importer"
-        android:icon="@drawable/ic_fichier"
-        app:iconTint="@color/icone_barre"
-        android:title="@string/importer_une_liste"
-        app:showAsAction="always" />
-    <item
-        android:id="@+id/serveur"
-        android:icon="@drawable/ic_serveur"
-        app:iconTint="@color/icone_barre"
-        android:title="@string/serveur"
-        app:showAsAction="always" />
-    <item
         android:id="@+id/langues"
         android:title="@string/langue"
         app:actionLayout="@layout/drapeaux"
         app:showAsAction="always" />
-    <!-- Dans les trois points : importer (aussi en icône), exporter, vider la liste de lecture quand elle est ouverte, la mise à jour. -->
+    <!-- Dans les trois points : le serveur, importer, exporter, vider la liste de lecture quand elle est ouverte, la mise à jour. -->
+    <item
+        android:id="@+id/serveur"
+        android:title="@string/serveur_menu"
+        app:showAsAction="never" />
     <item
         android:id="@+id/importerMenu"
         android:title="@string/importer_une_liste"
@@ -41,6 +33,14 @@
     <item
         android:id="@+id/sauvegarde"
         android:title="@string/sauvegarde_automatique"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/reveil"
+        android:title="@string/reveil_menu"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/compte"
+        android:title="@string/compte_menu"
         app:showAsAction="never" />
     <item
         android:id="@+id/invitation"

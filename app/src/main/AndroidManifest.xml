@@ -8,6 +8,12 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <!-- Le reveil radio : a la minute, comme un reveil ; reprogramme au demarrage du telephone. -->
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
+    <uses-permission
+        android:name="android.permission.SCHEDULE_EXACT_ALARM"
+        android:maxSdkVersion="32" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <!-- Depuis Android 13, la notification de lecture se demande. -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <!-- Lire le QR code d'appariement ; sans camera, l'adresse et le code se tapent. -->
@@ -19,6 +25,7 @@
     <!-- La raison d'etre du projet : les flux des stations sont, pour la
          plupart, en http simple. Une application a le droit de le dire. -->
     <application
+        android:name=".UnicornRadio"
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
@@ -28,6 +35,8 @@
 
         <activity
             android:name=".MainActivity"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden"
+            android:windowSoftInputMode="adjustResize"
             android:exported="true"
             android:launchMode="singleTask">
             <intent-filter>
@@ -72,5 +81,43 @@
                 <action android:name="androidx.media3.session.MediaSessionService" />
             </intent-filter>
         </service>
+        <!-- Les touches multimédia, du widget ou d'ailleurs, quand le service ne tourne pas :
+             Media3 le réveille, et « lecture » reprend la dernière écoute. -->
+        <receiver
+            android:name="androidx.media3.session.MediaButtonReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MEDIA_BUTTON" />
+            </intent-filter>
+        </receiver>
+
+        <!-- Le réveil radio : l'heure venue, le téléphone redémarré, l'application mise à jour, l'heure changée. -->
+        <receiver
+            android:name=".lecture.Reveil$Recepteur"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+                <action android:name="android.intent.action.TIME_SET" />
+                <action android:name="android.intent.action.TIMEZONE_CHANGED" />
+            </intent-filter>
+        </receiver>
+
+        <!-- Les notifications de ce qui est programmé : « Annuler », « Ne pas sonner cette fois ». -->
+        <receiver
+            android:name=".lecture.Annonces$Recepteur"
+            android:exported="false" />
+
+        <!-- Le widget de l'écran d'accueil. -->
+        <receiver
+            android:name=".lecture.Widget"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_info" />
+        </receiver>
     </application>
 </manifest>

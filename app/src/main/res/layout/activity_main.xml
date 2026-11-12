@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Le portrait. En paysage, MainActivity.disposer() range les mêmes vues autrement : à gauche la barre,
+     les onglets et les panneaux de recherche, à droite la liste, en bas le lecteur sur toute la largeur. -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/racine"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="?attr/colorSurface"
@@ -62,7 +65,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="@string/chercher_des_podcasts"
-            android:imeOptions="actionSearch"
+            android:imeOptions="actionSearch|flagNoExtractUi"
             android:importantForAutofill="no"
             android:inputType="text|textNoSuggestions"
             android:maxLines="1" />
@@ -123,7 +126,7 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:hint="@string/chercher_dans_les_episodes"
-                android:imeOptions="actionSearch"
+                android:imeOptions="actionSearch|flagNoExtractUi"
                 android:importantForAutofill="no"
                 android:inputType="text|textNoSuggestions"
                 android:maxLines="1" />
@@ -154,7 +157,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="@string/recherche_indice"
-            android:imeOptions="actionSearch"
+            android:imeOptions="actionSearch|flagNoExtractUi"
             android:importantForAutofill="no"
             android:inputType="text|textNoSuggestions"
             android:maxLines="1" />
@@ -186,6 +189,7 @@
     </LinearLayout>
 
     <FrameLayout
+        android:id="@+id/listeCadre"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1">
@@ -365,7 +369,7 @@
             app:tint="?attr/colorPrimary" />
     </LinearLayout>
 
-    <!-- Sous la ligne de lecture, pour un épisode : reculer, la barre, le temps restant, avancer. -->
+    <!-- Sous la ligne de lecture, pour un épisode : reculer de 15 s, la barre, le temps restant, la vitesse, avancer de 30 s. -->
     <LinearLayout
         android:id="@+id/lectureAvancement"
         android:layout_width="match_parent"
@@ -378,14 +382,34 @@
         android:paddingBottom="6dp"
         android:visibility="gone">
 
-        <ImageButton
+        <FrameLayout
             android:id="@+id/lectureReculer"
             android:layout_width="48dp"
             android:layout_height="48dp"
             android:background="?attr/selectableItemBackgroundBorderless"
+            android:clickable="true"
             android:contentDescription="@string/reculer"
-            android:src="@drawable/ic_reculer"
-            app:tint="?attr/colorOnSurfaceVariant" />
+            android:focusable="true">
+
+            <ImageView
+                android:layout_width="30dp"
+                android:layout_height="30dp"
+                android:layout_gravity="center"
+                android:importantForAccessibility="no"
+                android:src="@drawable/ic_reculer"
+                app:tint="?attr/colorOnSurfaceVariant" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:layout_marginTop="2dp"
+                android:importantForAccessibility="no"
+                android:text="15"
+                android:textColor="?attr/colorOnSurfaceVariant"
+                android:textSize="8sp"
+                android:textStyle="bold" />
+        </FrameLayout>
 
         <SeekBar
             android:id="@+id/lectureBarre"
@@ -402,13 +426,46 @@
             android:textAppearance="?attr/textAppearanceLabelMedium"
             android:textColor="?attr/colorOnSurfaceVariant" />
 
-        <ImageButton
+        <TextView
+            android:id="@+id/lectureVitesse"
+            android:layout_width="wrap_content"
+            android:layout_height="48dp"
+            android:background="?attr/selectableItemBackground"
+            android:contentDescription="@string/vitesse_de_lecture"
+            android:gravity="center"
+            android:minWidth="44dp"
+            android:paddingStart="6dp"
+            android:paddingEnd="6dp"
+            android:textAppearance="?attr/textAppearanceLabelLarge"
+            android:textColor="?attr/colorOnSurfaceVariant" />
+
+        <FrameLayout
             android:id="@+id/lectureAvancer"
             android:layout_width="48dp"
             android:layout_height="48dp"
             android:background="?attr/selectableItemBackgroundBorderless"
+            android:clickable="true"
             android:contentDescription="@string/avancer"
-            android:src="@drawable/ic_avancer"
-            app:tint="?attr/colorOnSurfaceVariant" />
+            android:focusable="true">
+
+            <ImageView
+                android:layout_width="30dp"
+                android:layout_height="30dp"
+                android:layout_gravity="center"
+                android:importantForAccessibility="no"
+                android:src="@drawable/ic_avancer"
+                app:tint="?attr/colorOnSurfaceVariant" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:layout_marginTop="2dp"
+                android:importantForAccessibility="no"
+                android:text="30"
+                android:textColor="?attr/colorOnSurfaceVariant"
+                android:textSize="8sp"
+                android:textStyle="bold" />
+        </FrameLayout>
     </LinearLayout>
 </LinearLayout>

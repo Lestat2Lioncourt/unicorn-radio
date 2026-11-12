@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Le titre et le sous-titre sous la barre, en paysage, créés par MainActivity. -->
+    <item name="enTeteTitre" type="id" />
+    <item name="enTeteSousTitre" type="id" />
+</resources>

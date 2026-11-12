@@ -4,6 +4,7 @@ import android.app.PendingIntent
 import android.content.Intent
 import android.os.Handler
 import android.os.Looper
+import android.os.SystemClock
 import android.util.Log
 import android.widget.Toast
 import androidx.media3.common.AudioAttributes
@@ -21,6 +22,10 @@ import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.extractor.metadata.icy.IcyInfo
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
+import androidx.media3.session.DefaultMediaNotificationProvider
+import androidx.core.app.ServiceCompat
+import com.google.common.util.concurrent.Futures
+import com.google.common.util.concurrent.ListenableFuture
 import org.unicornradio.app.BuildConfig
 import org.unicornradio.app.MainActivity
 import org.unicornradio.app.R
@@ -73,16 +78,25 @@ class ServiceLecture : MediaSessionService() {
         lecteur.addListener(suivi)
         lecteur.addListener(titres)
         lecteur.addListener(reprise)
+        lecteur.addListener(widget)
+        lecteur.addListener(finDuReveil)
 
         val ouvrir = PendingIntent.getActivity(
-            this, 0, Intent(this, MainActivity::class.java),
+            this, 0, Intent(this, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
-        session = MediaSession.Builder(this, lecteur).setSessionActivity(ouvrir).build()
+        // La notification du lecteur porte la licorne dans la barre d'état, pas l'icône neutre de Media3.
+        setMediaNotificationProvider(DefaultMediaNotificationProvider.Builder(this).build().apply { setSmallIcon(R.drawable.ic_licorne) })
+        session = MediaSession.Builder(this, lecteur)
+            .setSessionActivity(ouvrir)
+            .setCallback(reprendreLaDerniere)
+            .build()
         // La minuterie d'extinction, programmée par l'écran : à l'échéance, la pause.
         Extinction.arret = { session?.player?.pause() }
         // Un autre réseau pendant la lecture : le serveur sera recherché à la poussée suivante.
         Reseau.surveiller(this)
+        // Le réseau qui revient : une lecture tombée sur la coupure repart.
+        Reseau.surRetour = { main.post { reprendreApresLaCoupure() } }
     }
 
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaSession? = session
@@ -92,6 +106,8 @@ class ServiceLecture : MediaSessionService() {
         main.removeCallbacks(toutesLesDixSecondes)
         Extinction.annuler()
         Extinction.arret = null
+        Widget.mettreAJour(this, DerniereEcoute.nom(this), null, enLecture = false)
+        Reseau.surRetour = null
         Reseau.laisser()
         session?.run {
             player.release()
@@ -158,6 +174,15 @@ class ServiceLecture : MediaSessionService() {
         override fun onPlayerError(error: PlaybackException) {
             val p = session?.player ?: return
             val item = p.currentMediaItem ?: return
+            // Une erreur de réseau : notée, le retour du réseau relancera.
+            // Hors ligne, l'annuaire ne répondrait pas : on ne le consulte pas.
+            if (error.errorCode in ERREURS_DE_RESEAU) {
+                tombeeLe = SystemClock.elapsedRealtime()
+                if (!Reseau.enLigne(this@ServiceLecture)) {
+                    Log.i(Fichiers.JOURNAL, "réseau : lecture tombée sur une coupure, reprise au retour du réseau")
+                    return
+                }
+            }
             if (item.estUnEpisode) return
             val uuid = item.mediaId
             if (!redemandees.add(uuid)) return
@@ -198,6 +223,274 @@ class ServiceLecture : MediaSessionService() {
         }
     }
 
+    // ---- Les réveils et les comptes à rebours ----
+
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        if (intent?.action == Reveil.ACTION) {
+            val alarme = Reveil.alarmeDe(intent.getStringExtra(Reveil.ALARME))
+            passerAuPremierPlan(alarme)
+            if (alarme == null || !sonner(alarme, intent.getLongExtra(Reveil.HEURE_DITE, System.currentTimeMillis()))) {
+                ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE)
+            }
+        }
+        return super.onStartCommand(intent, flags, startId)
+    }
+
+    /**
+     * Lancé par une alarme (`startForegroundService`), le service doit passer
+     * au premier plan dans les secondes qui suivent, sinon Android l'arrête
+     * (plantage d'un essai, `ForegroundServiceDidNotStartInTimeException`).
+     * Media3 ne le fait qu'une fois son propre contrôleur connecté et la
+     * station chargée : trop tard parfois. Alors tout de suite, une
+     * notification sous le numéro de celle de Media3, qui la remplace dès
+     * qu'elle vient.
+     */
+    private fun passerAuPremierPlan(alarme: Reveil.Alarme?) {
+        val gestionnaire = getSystemService(android.app.NotificationManager::class.java)
+        if (gestionnaire.getNotificationChannel(CANAL_REVEIL) == null) {
+            gestionnaire.createNotificationChannel(
+                android.app.NotificationChannel(CANAL_REVEIL, getString(R.string.reveil_radio), android.app.NotificationManager.IMPORTANCE_LOW),
+            )
+        }
+        // Un appui ouvre l'application ; « Arrêter » met en pause, ce qui finit la sonnerie.
+        // Cette notification peut rester celle qu'on voit (essai : un appui n'ouvrait rien).
+        val ouvrir = PendingIntent.getActivity(
+            this, 2, Intent(this, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
+        val arreter = PendingIntent.getBroadcast(
+            this, 3,
+            Intent(Intent.ACTION_MEDIA_BUTTON)
+                .setComponent(android.content.ComponentName(this, androidx.media3.session.MediaButtonReceiver::class.java))
+                .putExtra(Intent.EXTRA_KEY_EVENT, android.view.KeyEvent(android.view.KeyEvent.ACTION_DOWN, android.view.KeyEvent.KEYCODE_MEDIA_PAUSE)),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
+        val notification = androidx.core.app.NotificationCompat.Builder(this, CANAL_REVEIL)
+            .setSmallIcon(R.drawable.ic_licorne)
+            .setColor(getColor(R.color.licorne))
+            .setLargeIcon(android.graphics.BitmapFactory.decodeResource(resources, R.drawable.logo))
+            .setContentTitle(alarme?.nom ?: getString(R.string.reveil_radio))
+            .setContentText(alarme?.let { Reveil.sonTexte(it.son) })
+            .setContentIntent(ouvrir)
+            .addAction(0, getString(R.string.arreter_la_lecture), arreter)
+            .setOngoing(true)
+            .build()
+        try {
+            ServiceCompat.startForeground(
+                this, androidx.media3.session.DefaultMediaNotificationProvider.DEFAULT_NOTIFICATION_ID, notification,
+                android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK,
+            )
+        } catch (e: Exception) {
+            Log.w(Fichiers.JOURNAL, "alarme : premier plan refusé : ${e.message}")
+        }
+    }
+
+    /** Vrai de la sonnerie jusqu'à la première pause ou à une autre écoute. */
+    private var reveilEnCours = false
+
+    /** L'identifiant de ce qui sonne dans le lecteur : la station, ou la sonnerie. */
+    private var idQuiSonne: String? = null
+
+    /** Le volume monte-t-il, ou part-il au plein à l'heure dite. */
+    private var progressif = true
+
+    /** Quand la montée du son a commencé (horloge du système depuis le démarrage), 0 avant l'heure dite. */
+    private var monteeDepuis = 0L
+
+    /**
+     * La montée du son, une fois par seconde pendant une minute : le volume
+     * est recalculé d'après le temps écoulé, au cube pour l'oreille, presque
+     * rien les premières secondes, plein à la fin. Recalculé, pas ajouté :
+     * rien ne peut le faire dériver.
+     */
+    private val monterLeSon = object : Runnable {
+        override fun run() {
+            val p = session?.player ?: return
+            if (!reveilEnCours || monteeDepuis == 0L) return
+            val f = ((SystemClock.elapsedRealtime() - monteeDepuis) / MONTEE_MS.toFloat()).coerceIn(0f, 1f)
+            p.volume = (0.02f + 0.98f * f * f * f).coerceAtMost(1f)
+            if (f < 1f) main.postDelayed(this, 1_000) else Log.i(Fichiers.JOURNAL, "alarme : plein son")
+        }
+    }
+
+    /** Le son, à l'heure dite : il monte en une minute, ou part au plein, selon l'alarme. */
+    private fun donnerLeSon() {
+        val p = session?.player ?: return
+        main.removeCallbacks(monterLeSon)
+        if (progressif) {
+            monteeDepuis = SystemClock.elapsedRealtime()
+            main.post(monterLeSon)
+        } else {
+            p.volume = 1f
+        }
+    }
+
+    /**
+     * L'heure dite, pour une station : elle joue depuis une minute, en muet,
+     * la publicité du début passée ; le son vient. Si elle ne joue pas, la
+     * sonnerie du téléphone, tout de suite.
+     */
+    private val aLHeureDite = Runnable {
+        val p = session?.player ?: return@Runnable
+        if (!reveilEnCours) return@Runnable
+        if (!p.isPlaying) {
+            Log.w(Fichiers.JOURNAL, "alarme : la station ne joue pas, la sonnerie du téléphone à la place")
+            jouerUneSonnerie(null)
+        }
+        Log.i(Fichiers.JOURNAL, "alarme : l'heure dite")
+        donnerLeSon()
+    }
+
+    /** Une sonnerie du téléphone en boucle, celle choisie, ou celle du réveil d'Android ; en muet, le son vient ensuite. */
+    private fun jouerUneSonnerie(uri: String?) {
+        val p = session?.player ?: return
+        val adresse = uri?.let { android.net.Uri.parse(it) }
+            ?: android.media.RingtoneManager.getActualDefaultRingtoneUri(this, android.media.RingtoneManager.TYPE_ALARM)
+            ?: android.media.RingtoneManager.getDefaultUri(android.media.RingtoneManager.TYPE_ALARM)
+            ?: return
+        idQuiSonne = ID_SONNERIE
+        p.setMediaItem(
+            MediaItem.Builder().setMediaId(ID_SONNERIE).setUri(adresse)
+                .setMediaMetadata(MediaMetadata.Builder().setTitle(getString(R.string.reveil_radio)).build())
+                .build(),
+        )
+        p.repeatMode = Player.REPEAT_MODE_ONE
+        p.volume = 0f
+        p.prepare()
+        p.play()
+    }
+
+    /**
+     * Une alarme sonne, sur le volume du réveil d'Android (elle sonne même
+     * en silencieux). Une station démarre une minute avant l'heure dite, en
+     * muet, le temps que la publicité du début passe ; à l'heure dite, le son
+     * vient (`aLHeureDite`), ou la sonnerie du téléphone si rien ne joue. Une
+     * sonnerie choisie démarre à l'heure. Arrêt d'office au bout d'une heure
+     * sans un geste.
+     */
+    private fun sonner(alarme: Reveil.Alarme, heureDite: Long): Boolean {
+        val p = session?.player ?: return false
+        Log.i(Fichiers.JOURNAL, "alarme « ${alarme.nom ?: "sans nom"} » : ${Reveil.sonTexte(alarme.son)}")
+        reveilEnCours = true
+        progressif = alarme.progressif
+        monteeDepuis = 0L
+        main.removeCallbacks(monterLeSon)
+        main.removeCallbacks(aLHeureDite)
+        p.setAudioAttributes(AudioAttributes.Builder().setUsage(C.USAGE_ALARM).setContentType(C.AUDIO_CONTENT_TYPE_MUSIC).build(), true)
+        when (val son = alarme.son) {
+            is Reveil.Son.DeStation -> {
+                idQuiSonne = son.station.uuid
+                p.repeatMode = Player.REPEAT_MODE_OFF
+                p.volume = 0f
+                p.setMediaItem(son.station.versElement())
+                p.prepare()
+                p.play()
+                val attente = (heureDite - System.currentTimeMillis()).coerceIn(0L, 2 * Reveil.AVANCE_MS)
+                main.postDelayed(aLHeureDite, attente)
+            }
+            is Reveil.Son.Sonnerie -> {
+                jouerUneSonnerie(son.uri)
+                donnerLeSon()
+            }
+        }
+        Extinction.programmer(61)
+        return true
+    }
+
+    /** La sonnerie finie, par une pause ou une autre écoute : le lecteur redevient ordinaire. */
+    private fun finirLeReveil() {
+        if (!reveilEnCours) return
+        reveilEnCours = false
+        idQuiSonne = null
+        main.removeCallbacks(monterLeSon)
+        main.removeCallbacks(aLHeureDite)
+        val p = session?.player ?: return
+        p.setAudioAttributes(AudioAttributes.Builder().setUsage(C.USAGE_MEDIA).setContentType(C.AUDIO_CONTENT_TYPE_MUSIC).build(), true)
+        p.repeatMode = Player.REPEAT_MODE_OFF
+        p.volume = 1f
+        if (p.currentMediaItem?.mediaId == ID_SONNERIE) { p.stop(); p.clearMediaItems() }
+    }
+
+    private val finDuReveil = object : Player.Listener {
+        override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) {
+            if (!playWhenReady) finirLeReveil()
+        }
+
+        override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
+            if (mediaItem?.mediaId != idQuiSonne && mediaItem?.mediaId != ID_SONNERIE) finirLeReveil()
+        }
+    }
+
+    // ---- La dernière écoute, et le widget ----
+
+    /**
+     * « Lecture » sans rien dans le lecteur, depuis le widget, le casque ou
+     * les commandes de lecture d'Android : la dernière écoute est remise.
+     */
+    private val reprendreLaDerniere = object : MediaSession.Callback {
+        override fun onPlaybackResumption(
+            mediaSession: MediaSession,
+            controller: MediaSession.ControllerInfo,
+        ): ListenableFuture<MediaSession.MediaItemsWithStartPosition> {
+            val a = DerniereEcoute.aJouer(this@ServiceLecture)
+                ?: return Futures.immediateFailedFuture(UnsupportedOperationException("rien à reprendre"))
+            Log.i(Fichiers.JOURNAL, "reprise de la dernière écoute")
+            return Futures.immediateFuture(MediaSession.MediaItemsWithStartPosition(a.elements, a.index, a.positionMs))
+        }
+    }
+
+    /** Le widget suit le lecteur : ce qui joue, le titre en cours, lecture ou pause. */
+    private val widget = object : Player.Listener {
+        override fun onEvents(player: Player, events: Player.Events) {
+            if (!events.containsAny(
+                    Player.EVENT_MEDIA_ITEM_TRANSITION, Player.EVENT_MEDIA_METADATA_CHANGED,
+                    Player.EVENT_PLAY_WHEN_READY_CHANGED, Player.EVENT_PLAYBACK_STATE_CHANGED,
+                )
+            ) return
+            val item = player.currentMediaItem
+            val fiche = item?.mediaMetadata
+            val nom = when {
+                item == null -> DerniereEcoute.nom(this@ServiceLecture)
+                item.estUnEpisode -> fiche?.title?.toString()
+                else -> fiche?.station?.toString()
+            }
+            val titre = when {
+                item == null -> null
+                item.estUnEpisode -> fiche?.artist?.toString()
+                else -> fiche?.title?.toString()?.takeIf { it != nom }
+            }
+            Widget.mettreAJour(this@ServiceLecture, nom, titre, enLecture = player.playWhenReady && player.playbackState != Player.STATE_IDLE)
+        }
+    }
+
+    // ---- Reprendre au retour du réseau ----
+
+    /** Quand la lecture est tombée sur une erreur de réseau ; 0 si rien n'est à reprendre. */
+    private var tombeeLe = 0L
+
+    /**
+     * Le réseau est revenu : si la lecture est en erreur de réseau, toujours
+     * voulue (pas de pause ni d'arrêt depuis) et tombée il y a moins de
+     * trente minutes, elle repart, à la même position pour un épisode.
+     */
+    private fun reprendreApresLaCoupure() {
+        val p = session?.player ?: return
+        val quand = tombeeLe
+        tombeeLe = 0L
+        if (quand == 0L) return
+        val erreur = p.playerError ?: return
+        if (erreur.errorCode !in ERREURS_DE_RESEAU || !p.playWhenReady || p.currentMediaItem == null) return
+        if (SystemClock.elapsedRealtime() - quand > TRENTE_MINUTES_MS) {
+            Log.i(Fichiers.JOURNAL, "réseau : revenu, mais la coupure dure depuis plus de trente minutes, pas de reprise")
+            return
+        }
+        val nom = (p.currentMediaItem?.mediaMetadata?.station ?: p.currentMediaItem?.mediaMetadata?.title ?: "").toString()
+        Log.i(Fichiers.JOURNAL, "réseau : revenu, « $nom » reprend")
+        p.prepare()
+        p.play()
+        dire(getString(R.string.reprise_au_retour_du_reseau, nom))
+    }
+
     private fun dire(texte: String) {
         Toast.makeText(applicationContext, texte, Toast.LENGTH_LONG).show()
     }
@@ -224,6 +517,10 @@ class ServiceLecture : MediaSessionService() {
     private val suivi = object : Player.Listener {
         /** Un épisode qui démarre, à la main ou à la suite du précédent : la liste de lecture le note, tout de suite, avant que l'écran ne relise. */
         override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
+            // Ce qu'on écoute devient la dernière écoute, que l'ouverture, le widget et Android savent reprendre.
+            if (mediaItem != null) DerniereEcoute.noter(this@ServiceLecture, mediaItem)
+            // La vitesse : celle choisie pour un épisode, 1× pour une station.
+            if (mediaItem != null) session?.player?.setPlaybackSpeed(if (mediaItem.episode != null) Vitesse.lue(this@ServiceLecture) else 1f)
             if (mediaItem?.episode == null) return
             val p = session?.player ?: return
             val elements = (0 until p.mediaItemCount).map { p.getMediaItemAt(it) }
@@ -339,3 +636,21 @@ class ServiceLecture : MediaSessionService() {
         }
     }
 }
+
+/** Les erreurs d'une coupure : connexion impossible, délai dépassé, entrée-sortie sans détail. */
+private val ERREURS_DE_RESEAU = setOf(
+    PlaybackException.ERROR_CODE_IO_UNSPECIFIED,
+    PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_FAILED,
+    PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_TIMEOUT,
+)
+
+private const val TRENTE_MINUTES_MS = 30 * 60_000L
+
+/** L'identifiant de la sonnerie de secours du réveil, dans le lecteur. */
+private const val ID_SONNERIE = "reveil-sonnerie"
+
+/** La montée du son du réveil, du silence au plein. */
+private const val MONTEE_MS = 60_000L
+
+/** Le canal de la notification d'attente du réveil, le temps que celle de Media3 vienne. */
+private const val CANAL_REVEIL = "reveil"

@@ -3,4 +3,6 @@
     <!-- Les icônes de la barre, flèche retour, loupe, fichier : un gris moyen,
          plus doux que le texte du thème, mais pas blanc. -->
     <color name="icone_barre">#5F6368</color>
+    <!-- La licorne des notifications, teinte du bleu de la crinière du logo. -->
+    <color name="licorne">#3D5AFE</color>
 </resources>

@@ -11,6 +11,10 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.content.res.ColorStateList
+import android.content.res.Configuration
+import android.util.TypedValue
+import android.view.ViewGroup
+import android.widget.LinearLayout
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -36,6 +40,8 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.appcompat.widget.TooltipCompat
 import androidx.core.content.ContextCompat
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.core.os.LocaleListCompat
 import androidx.core.widget.doAfterTextChanged
 import androidx.lifecycle.lifecycleScope
@@ -139,6 +145,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var lectureAvancement: View
     private lateinit var lectureBarre: SeekBar
     private lateinit var lectureReste: TextView
+    private lateinit var lectureVitesse: TextView
     private lateinit var ecoutes: Ecoutes
     private lateinit var fileDEcoute: FileDEcoute
     private lateinit var telechargements: Telechargements
@@ -273,6 +280,7 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         ouvrirLesFavoris = savedInstanceState == null
         setContentView(R.layout.activity_main)
+        window.decorView.post { montrerLePlantage(); ouvrirLesAlarmes(intent) }
         fichiers = Fichiers(this)
         serveur = Serveur(this)
         mesRadios = MesRadios(this, MesRadios.COPIE)
@@ -315,6 +323,7 @@ class MainActivity : AppCompatActivity() {
         lectureAvancement = findViewById(R.id.lectureAvancement)
         lectureBarre = findViewById(R.id.lectureBarre)
         lectureReste = findViewById(R.id.lectureReste)
+        disposer(resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE)
         ecoutes = Ecoutes(this)
         fileDEcoute = FileDEcoute(this)
         telechargements = Telechargements(this)
@@ -353,7 +362,7 @@ class MainActivity : AppCompatActivity() {
         barre.overflowIcon?.setTint(getColor(R.color.icone_barre))
         barre.setOnMenuItemClickListener {
             when (it.itemId) {
-                R.id.importer, R.id.importerMenu -> { choisirUnFichier.launch(arrayOf("application/json", "application/octet-stream", "text/plain")); true }
+                R.id.importerMenu -> { choisirUnFichier.launch(arrayOf("application/json", "application/octet-stream", "text/plain")); true }
                 R.id.exporter -> { exporter(); true }
                 R.id.chercher -> { entrerDansLaRecherche(); true }
                 R.id.serveur -> { ouvrirServeur.launch(Intent(this, ServeurActivity::class.java)); true }
@@ -362,6 +371,8 @@ class MainActivity : AppCompatActivity() {
                 R.id.invitation -> { montrerLInvitation(); true }
                 R.id.miseAJour -> { verifierLaMiseAJour(aLaMain = true); true }
                 R.id.aPropos -> { montrerLAPropos(); true }
+                R.id.reveil -> { montrerLesAlarmes(org.unicornradio.app.lecture.Reveil.Genre.REVEIL); true }
+                R.id.compte -> { montrerLesAlarmes(org.unicornradio.app.lecture.Reveil.Genre.COMPTE); true }
                 else -> false
             }
         }
@@ -400,7 +411,9 @@ class MainActivity : AppCompatActivity() {
         }
         episodesDeplier.setOnClickListener { basculerTousLesJours() }
         findViewById<View>(R.id.lectureReculer).setOnClickListener { sauter(-15_000) }
-        findViewById<View>(R.id.lectureAvancer).setOnClickListener { sauter(15_000) }
+        findViewById<View>(R.id.lectureAvancer).setOnClickListener { sauter(30_000) }
+        lectureVitesse = findViewById(R.id.lectureVitesse)
+        lectureVitesse.setOnClickListener { choisirLaVitesse() }
         lectureBarre.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(barre: SeekBar, progression: Int, parUtilisateur: Boolean) {
                 if (parUtilisateur) lectureReste.text = "-" + formaterDuree((barre.max - progression).toLong())
@@ -437,6 +450,7 @@ class MainActivity : AppCompatActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         traiter(intent)
+        ouvrirLesAlarmes(intent)
     }
 
     /** « Ouvrir avec » : l'intention porte le fichier, à verser dans ma liste. */
@@ -459,6 +473,7 @@ class MainActivity : AppCompatActivity() {
                 }
                 controleur?.addListener(surLecteur)
                 rafraichirLecture()
+                remettreLaDerniereEcoute()
             }, MoreExecutors.directExecutor())
         }
         // Les téléchargements finis pendant qu'on n'était pas là.
@@ -841,6 +856,141 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    // ---- Portrait et paysage ----
+
+    /**
+     * L'activité n'est pas recréée quand le téléphone tourne (`configChanges`
+     * du manifeste) : rien ne se perd, ni l'onglet, ni le dossier ouvert, ni
+     * la recherche, et les mêmes vues sont rangées autrement.
+     */
+    override fun onConfigurationChanged(nouvelle: Configuration) {
+        super.onConfigurationChanged(nouvelle)
+        disposer(nouvelle.orientation == Configuration.ORIENTATION_LANDSCAPE)
+    }
+
+    /** Les vues déplacées, dans l'ordre du portrait, et leur place telle que le layout la donne. */
+    private val placesDuPortrait = LinkedHashMap<View, ViewGroup.LayoutParams>()
+    private var paysage: Boolean? = null
+    /** En paysage, le lecteur et sa ligne d'avancement, en bas sur toute la largeur. */
+    private var pied: View? = null
+    private var surveilleLeClavier = false
+
+    /**
+     * En paysage, le clavier ouvert ne laisse qu'une bande en haut de l'écran :
+     * le lecteur du bas et le titre de la colonne s'effacent le temps de la
+     * saisie, pour que le champ reste visible ; ils reviennent à la fermeture.
+     */
+    private fun suivreLeClavier(racine: View) {
+        if (paysage != true) return
+        val clavier = ViewCompat.getRootWindowInsets(racine)?.isVisible(WindowInsetsCompat.Type.ime()) == true
+        val visibilite = if (clavier) View.GONE else View.VISIBLE
+        pied?.let { if (it.visibility != visibilite) it.visibility = visibilite }
+        if (enTete.visibility != visibilite) enTete.visibility = visibilite
+    }
+
+    /** Le titre et le sous-titre de l'écran : dans la barre en portrait, sous la barre en paysage. */
+    private var titreCourant: CharSequence? = null
+    private var sousTitreCourant: CharSequence? = null
+
+    /** En paysage, sous la barre et ses icônes : le titre en entier, sur plusieurs lignes au besoin, et le sous-titre. */
+    private val enTete by lazy {
+        val dp = resources.displayMetrics.density
+        LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding((16 * dp).toInt(), 0, (16 * dp).toInt(), (8 * dp).toInt())
+            addView(TextView(this@MainActivity).apply {
+                id = R.id.enTeteTitre
+                setTextAppearance(com.google.android.material.R.style.TextAppearance_Material3_TitleLarge)
+                maxLines = 3
+                ellipsize = android.text.TextUtils.TruncateAt.END
+            })
+            addView(TextView(this@MainActivity).apply {
+                id = R.id.enTeteSousTitre
+                setTextAppearance(com.google.android.material.R.style.TextAppearance_Material3_LabelMedium)
+                val couleur = TypedValue()
+                theme.resolveAttribute(com.google.android.material.R.attr.colorOnSurfaceVariant, couleur, true)
+                setTextColor(couleur.data)
+            })
+        }
+    }
+
+    private fun titrer(titre: CharSequence?, sousTitre: CharSequence?) {
+        titreCourant = titre
+        sousTitreCourant = sousTitre
+        appliquerLeTitre()
+    }
+
+    private fun appliquerLeTitre() {
+        if (paysage == true) {
+            barre.title = null
+            barre.subtitle = null
+            enTete.findViewById<TextView>(R.id.enTeteTitre).text = titreCourant
+            enTete.findViewById<TextView>(R.id.enTeteSousTitre).apply {
+                text = sousTitreCourant
+                visibility = if (sousTitreCourant.isNullOrEmpty()) View.GONE else View.VISIBLE
+            }
+        } else {
+            barre.title = titreCourant
+            barre.subtitle = sousTitreCourant
+        }
+    }
+
+    /**
+     * Portrait : tout l'un sous l'autre, comme le layout. Paysage : en haut,
+     * à gauche une colonne avec la barre, les onglets et les panneaux de
+     * recherche, à droite la liste sur toute la hauteur ; en bas, le lecteur
+     * et la ligne d'avancement sur toute la largeur, pour que le titre en
+     * cours se lise.
+     *
+     * Chaque fois, tout est détaché puis rattaché : les conteneurs du
+     * paysage sont refaits à neuf, aucune vue n'y reste accrochée d'une
+     * rotation à l'autre.
+     */
+    private fun disposer(enPaysage: Boolean) {
+        if (paysage == enPaysage) return
+        val racine = findViewById<LinearLayout>(R.id.racine)
+        val listeCadre = findViewById<View>(R.id.listeCadre)
+        if (placesDuPortrait.isEmpty()) {
+            for (v in listOf(barre, onglets, podcastsPanneau, episodesPanneau, recherche, listeCadre, lecture, lectureAvancement)) {
+                placesDuPortrait[v] = v.layoutParams
+            }
+        }
+        for (v in placesDuPortrait.keys) (v.parent as? ViewGroup)?.removeView(v)
+        racine.removeAllViews()
+        if (enPaysage) {
+            fun enLigne(hauteur: Int = ViewGroup.LayoutParams.WRAP_CONTENT) = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, hauteur)
+            val colonne = LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                addView(barre, enLigne(placesDuPortrait.getValue(barre).height))
+                (enTete.parent as? ViewGroup)?.removeView(enTete)
+                addView(enTete, enLigne())
+                addView(onglets, LinearLayout.LayoutParams(placesDuPortrait.getValue(onglets) as LinearLayout.LayoutParams))
+                for (v in listOf(podcastsPanneau, episodesPanneau, recherche)) addView(v, enLigne())
+            }
+            val corps = LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                addView(colonne, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 2f))
+                addView(listeCadre, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 3f))
+            }
+            racine.addView(corps, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f))
+            // Le lecteur et l'avancement, ensemble : cachés tant que le clavier est ouvert, pour laisser voir la saisie.
+            pied = LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                addView(lecture, enLigne())
+                addView(lectureAvancement, enLigne())
+            }
+            racine.addView(pied, enLigne())
+            if (!surveilleLeClavier) {
+                surveilleLeClavier = true
+                racine.viewTreeObserver.addOnGlobalLayoutListener { suivreLeClavier(racine) }
+            }
+        } else {
+            for ((v, place) in placesDuPortrait) racine.addView(v, place)
+        }
+        paysage = enPaysage
+        appliquerLeTitre()
+    }
+
     // ---- La liste ----
 
     /** Le sous-titre de la racine : le serveur apparié, s'il ne répond pas, et la version. */
@@ -853,7 +1003,6 @@ class MainActivity : AppCompatActivity() {
     private fun afficher() {
         val apparie = serveur.apparie
         // La loupe, l'import et l'export sont de l'onglet Radio ; vider la liste, de la liste de lecture ouverte.
-        barre.menu.findItem(R.id.importer).isVisible = onglet == Onglet.RADIO
         barre.menu.findItem(R.id.importerMenu).isVisible = onglet == Onglet.RADIO
         barre.menu.findItem(R.id.exporter).isVisible = onglet == Onglet.RADIO
         barre.menu.findItem(R.id.chercher).isVisible = onglet == Onglet.RADIO
@@ -862,8 +1011,7 @@ class MainActivity : AppCompatActivity() {
             retour.isEnabled = true
             barre.navigationIcon = getDrawable(R.drawable.ic_retour)
             barre.logo = null
-            barre.title = getString(R.string.annuaire)
-            barre.subtitle = null
+            titrer(getString(R.string.annuaire), null)
             onglets.visibility = View.GONE
             podcastsPanneau.visibility = View.GONE
             episodesPanneau.visibility = View.GONE
@@ -887,8 +1035,7 @@ class MainActivity : AppCompatActivity() {
         barre.navigationIcon = if (racine) null else getDrawable(R.drawable.ic_retour)
         // À la racine, le logo devant le nom ; dans un dossier, la flèche retour prend sa place.
         barre.logo = if (racine) getDrawable(R.drawable.logo) else null
-        barre.title = noeud?.titre ?: getString(R.string.app_name)
-        barre.subtitle = if (racine) sousTitreDeLaRacine() else null
+        titrer(noeud?.titre ?: getString(R.string.app_name), if (racine) sousTitreDeLaRacine() else null)
         if (noeud == null) {
             videTexte.text = if (apparie) getString(R.string.copie_absente, serveur.nom) else getString(R.string.aucun_fichier)
             videBouton.visibility = if (apparie) View.GONE else View.VISIBLE
@@ -1180,6 +1327,465 @@ class MainActivity : AppCompatActivity() {
         return compte
     }
 
+    // ---- Un plantage ----
+
+    /** Le plantage de la fois d'avant, s'il y en a eu un : montré une fois, à copier ou envoyer. */
+    private fun montrerLePlantage() {
+        val trace = Plantages.prendre(this) ?: return
+        val marge = (resources.displayMetrics.density * 20).toInt()
+        val texte = TextView(this).apply {
+            text = trace
+            textSize = 11f
+            typeface = android.graphics.Typeface.MONOSPACE
+            setTextIsSelectable(true)
+            setPadding(marge, marge / 2, marge, 0)
+        }
+        MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.plantage_titre)
+            .setMessage(R.string.plantage_explication)
+            .setView(android.widget.ScrollView(this).apply { addView(texte) })
+            .setNegativeButton(R.string.invitation_fermer, null)
+            .setNeutralButton(R.string.plantage_copier) { _, _ -> copier(trace) }
+            .setPositiveButton(R.string.plantage_envoyer) { _, _ ->
+                val envoi = Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, trace)
+                startActivity(Intent.createChooser(envoi, getString(R.string.plantage_envoyer)))
+            }
+            .show()
+    }
+
+    // ---- Les réveils et les comptes à rebours ----
+
+    private val reveil = org.unicornradio.app.lecture.Reveil
+
+    /** La sonnerie choisie dans le sélecteur d'Android, rendue à qui l'attend. */
+    private var apresLaSonnerie: ((org.unicornradio.app.lecture.Reveil.Son) -> Unit)? = null
+    private val choisirUneSonnerie = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { resultat ->
+        val suite = apresLaSonnerie
+        apresLaSonnerie = null
+        @Suppress("DEPRECATION")
+        val uri = resultat.data?.getParcelableExtra<Uri>(android.media.RingtoneManager.EXTRA_RINGTONE_PICKED_URI)
+        if (resultat.resultCode != RESULT_OK || uri == null || suite == null) return@registerForActivityResult
+        val titre = try { android.media.RingtoneManager.getRingtone(this, uri)?.getTitle(this) } catch (e: Exception) { null }
+            ?: getString(R.string.sonnerie)
+        suite(org.unicornradio.app.lecture.Reveil.Son.Sonnerie(uri.toString(), titre))
+    }
+
+    /**
+     * Une ligne de liste : un titre (en italique pour un sans-nom), un
+     * détail, un interrupteur ou non. Un appui sur le texte ferme la liste
+     * et fait `surAppui` ; l'interrupteur fait `surBascule` et la liste se
+     * relit, sans se fermer.
+     */
+    private class Ligne(
+        val titre: String,
+        val detail: String? = null,
+        val italique: Boolean = false,
+        val coche: Boolean? = null,
+        val surAppui: (() -> Unit)? = null,
+        val surBascule: ((Boolean) -> Unit)? = null,
+    )
+
+    /**
+     * Une fenêtre de lignes (`ligne_alarme`), relues après chaque bascule,
+     * et chaque seconde si `chaqueSeconde` (le temps qui reste d'un compte à
+     * rebours). `lignes` rend `null` quand il n'y a plus rien à montrer : la
+     * fenêtre se ferme.
+     */
+    private fun fenetreDeLignes(titre: String, chaqueSeconde: Boolean, fermer: () -> Unit, lignes: () -> List<Ligne>?) {
+        var dialogue: androidx.appcompat.app.AlertDialog? = null
+        val adaptateurDesLignes = object : android.widget.BaseAdapter() {
+            var contenu = lignes() ?: emptyList()
+            fun relire() {
+                val l = lignes()
+                if (l == null) { dialogue?.dismiss(); return }
+                contenu = l
+                notifyDataSetChanged()
+            }
+            override fun getCount() = contenu.size
+            override fun getItem(i: Int) = contenu[i]
+            override fun getItemId(i: Int) = i.toLong()
+            override fun getView(i: Int, ancienne: View?, parent: ViewGroup): View {
+                val v = ancienne ?: layoutInflater.inflate(R.layout.ligne_alarme, parent, false)
+                val l = contenu[i]
+                v.findViewById<TextView>(R.id.alarmeNom).apply {
+                    text = l.titre
+                    setTypeface(null, if (l.italique) android.graphics.Typeface.ITALIC else android.graphics.Typeface.NORMAL)
+                }
+                v.findViewById<TextView>(R.id.alarmeDetail).apply {
+                    text = l.detail
+                    visibility = if (l.detail.isNullOrEmpty()) View.GONE else View.VISIBLE
+                }
+                val interrupteur = v.findViewById<com.google.android.material.materialswitch.MaterialSwitch>(R.id.alarmeInterrupteur)
+                interrupteur.setOnCheckedChangeListener(null)
+                interrupteur.visibility = if (l.coche == null) View.GONE else View.VISIBLE
+                interrupteur.isChecked = l.coche == true
+                interrupteur.setOnCheckedChangeListener { _, oui -> l.surBascule?.invoke(oui); relire() }
+                val textes = v.findViewById<View>(R.id.alarmeTextes)
+                if (l.surAppui != null) {
+                    textes.isClickable = true
+                    textes.setOnClickListener { dialogue?.dismiss(); l.surAppui.invoke() }
+                } else if (l.coche != null) {
+                    // Sans réglage à ouvrir, un appui sur le texte bascule l'interrupteur.
+                    textes.setOnClickListener { interrupteur.toggle() }
+                } else {
+                    textes.setOnClickListener(null)
+                    textes.isClickable = false
+                }
+                return v
+            }
+        }
+        val tic = object : Runnable {
+            override fun run() {
+                adaptateurDesLignes.relire()
+                minuterie.postDelayed(this, 1_000)
+            }
+        }
+        dialogue = MaterialAlertDialogBuilder(this)
+            .setTitle(titre)
+            .setAdapter(adaptateurDesLignes, null)
+            .setNegativeButton(R.string.invitation_fermer) { _, _ -> fermer() }
+            .setOnDismissListener { minuterie.removeCallbacks(tic) }
+            .show()
+        if (chaqueSeconde) minuterie.postDelayed(tic, 1_000)
+    }
+
+    /**
+     * « Réveil radio… » ou « Compte à rebours… » : la liste, chacun son nom
+     * et son détail (un appui : ses réglages) et son interrupteur (en
+     * marche ou arrêté, lancé ou annulé) ; « ＋ Nouveau… » en dernier. Pour
+     * les comptes à rebours, le temps qui reste, chaque seconde.
+     */
+    private fun montrerLesAlarmes(genre: org.unicornradio.app.lecture.Reveil.Genre) {
+        if (!reveil.peutProgrammer(this)) {
+            demanderLaPermissionDuReveil()
+            return
+        }
+        val compte = genre == org.unicornradio.app.lecture.Reveil.Genre.COMPTE
+        fenetreDeLignes(getString(if (compte) R.string.comptes_titre else R.string.reveils_titre), chaqueSeconde = compte, fermer = {}) {
+            reveil.alarmes(this, genre).map { a ->
+                Ligne(
+                    titre = a.nom ?: getString(R.string.sans_nom),
+                    detail = detailDe(a),
+                    italique = a.nom == null,
+                    coche = a.actif,
+                    surAppui = { reglerLAlarme(a.id) },
+                    surBascule = { oui ->
+                        val quand = reveil.basculer(this, a.id, oui)
+                        if (oui) direLaProgrammation(a, quand)
+                    },
+                )
+            } + Ligne(getString(if (compte) R.string.compte_nouveau else R.string.reveil_nouveau), surAppui = { nouvelleAlarme(genre) })
+        }
+    }
+
+    /** « 07:00 · lun. – ven. · FIP », « 20 min · FIP · fin à 14:32 · reste 12:34 ». */
+    private fun detailDe(a: org.unicornradio.app.lecture.Reveil.Alarme): String {
+        val morceaux = ArrayList<String>()
+        if (a.genre == org.unicornradio.app.lecture.Reveil.Genre.COMPTE) {
+            morceaux += reveil.dureeTexte(a.minutes)
+            morceaux += reveil.sonTexte(a.son)
+            if (a.actif && a.fin > System.currentTimeMillis()) {
+                morceaux += getString(R.string.compte_detail_fin, heureDe(a.fin))
+                morceaux += getString(R.string.compte_detail_reste, resteTexte(a.fin - System.currentTimeMillis()))
+            }
+        } else {
+            morceaux += reveil.heureTexte(a.heure, a.minute)
+            morceaux += reveil.joursTexte(this, a.jours, getString(R.string.reveil_une_fois))
+            morceaux += reveil.sonTexte(a.son)
+        }
+        return morceaux.joinToString(" · ")
+    }
+
+    /** « 12:34 », « 1:02:03 ». */
+    private fun resteTexte(ms: Long): String {
+        val s = (ms / 1000).coerceAtLeast(0)
+        return if (s >= 3600) String.format(java.util.Locale.ROOT, "%d:%02d:%02d", s / 3600, s / 60 % 60, s % 60)
+        else String.format(java.util.Locale.ROOT, "%d:%02d", s / 60, s % 60)
+    }
+
+    private fun demanderLaPermissionDuReveil() {
+        Toast.makeText(this, R.string.reveil_permission, Toast.LENGTH_LONG).show()
+        try {
+            startActivity(Intent(android.provider.Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM, Uri.parse("package:$packageName")))
+        } catch (e: Exception) {
+            Log.w(Fichiers.JOURNAL, "réveil : réglage d'Android introuvable : ${e.message}")
+        }
+    }
+
+    /** Une notification d'alarme programmée touchée : la liste qui va avec, une fois. */
+    private fun ouvrirLesAlarmes(intention: Intent?) {
+        val genre = intention?.getStringExtra(org.unicornradio.app.lecture.Annonces.OUVRIR) ?: return
+        intention.removeExtra(org.unicornradio.app.lecture.Annonces.OUVRIR)
+        montrerLesAlarmes(
+            if (genre == org.unicornradio.app.lecture.Reveil.Genre.COMPTE.name) org.unicornradio.app.lecture.Reveil.Genre.COMPTE
+            else org.unicornradio.app.lecture.Reveil.Genre.REVEIL,
+        )
+    }
+
+    /** « 14:32 », au format du téléphone. */
+    private fun heureDe(quand: Long): String = android.text.format.DateFormat.getTimeFormat(this).format(java.util.Date(quand))
+
+    /** Ce qui est programmé, dit en un message. */
+    private fun direLaProgrammation(a: org.unicornradio.app.lecture.Reveil.Alarme, quand: Long?) {
+        val texte = when {
+            quand == null -> getString(R.string.reveil_permission)
+            a.genre == org.unicornradio.app.lecture.Reveil.Genre.COMPTE ->
+                getString(R.string.compte_lance, a.nom ?: getString(R.string.compte_a_rebours), heureDe(quand))
+            else -> getString(
+                R.string.reveil_programme,
+                android.text.format.DateUtils.formatDateTime(
+                    this, quand,
+                    android.text.format.DateUtils.FORMAT_SHOW_WEEKDAY or android.text.format.DateUtils.FORMAT_SHOW_DATE or android.text.format.DateUtils.FORMAT_SHOW_TIME,
+                ),
+            )
+        }
+        Toast.makeText(this, texte, Toast.LENGTH_LONG).show()
+    }
+
+    // ---- Une alarme : la créer, la régler ----
+
+    /**
+     * Une nouvelle alarme : le nom (vide, elle sert une fois), puis l'heure
+     * et, nommée, les jours, ou la durée ; puis le son. Enregistrée en
+     * marche, ou lancée.
+     */
+    private fun nouvelleAlarme(genre: org.unicornradio.app.lecture.Reveil.Genre) {
+        val compte = genre == org.unicornradio.app.lecture.Reveil.Genre.COMPTE
+        demanderLeNom(null) { nom ->
+            val base = org.unicornradio.app.lecture.Reveil.Alarme(
+                id = 0, genre = genre, nom = nom,
+                jours = if (nom == null) emptySet() else reveil.JOURS.take(5).toSet(),
+                son = reveil.dernierSon(this) ?: sonParDefaut(),
+            )
+            val finir = { a: org.unicornradio.app.lecture.Reveil.Alarme ->
+                choisirLeSon(a.son) { son ->
+                    val pret = a.copy(id = reveil.nouvelId(this), son = son, actif = false)
+                    reveil.garder(this, pret)
+                    direLaProgrammation(pret, reveil.basculer(this, pret.id, true))
+                    montrerLesAlarmes(genre)
+                }
+            }
+            if (compte) {
+                choisirLaDuree(base.minutes) { minutes -> finir(base.copy(minutes = minutes)) }
+            } else {
+                choisirLHeure(base.heure, base.minute) { h, m ->
+                    val avecLHeure = base.copy(heure = h, minute = m)
+                    if (nom == null) finir(avecLHeure) else choisirLesJours(avecLHeure.jours) { jours -> finir(avecLHeure.copy(jours = jours)) }
+                }
+            }
+        }
+    }
+
+    /** La sonnerie du réveil d'Android, quand rien d'autre n'a encore été choisi. */
+    private fun sonParDefaut(): org.unicornradio.app.lecture.Reveil.Son {
+        toutesMesStations().firstOrNull()?.let { return org.unicornradio.app.lecture.Reveil.Son.DeStation(it) }
+        val uri = android.media.RingtoneManager.getDefaultUri(android.media.RingtoneManager.TYPE_ALARM)
+        return org.unicornradio.app.lecture.Reveil.Son.Sonnerie(uri.toString(), getString(R.string.sonnerie))
+    }
+
+    /**
+     * Les réglages d'une alarme : en marche (lancé, avec le temps qui reste)
+     * et le volume progressif par un interrupteur ; le nom, l'heure ou la
+     * durée, les jours, le son d'un appui, la fenêtre revenant à jour ;
+     * « Fermer », la liste des alarmes.
+     */
+    private fun reglerLAlarme(id: Int) {
+        val premiere = reveil.alarme(this, id) ?: return
+        val compte = premiere.genre == org.unicornradio.app.lecture.Reveil.Genre.COMPTE
+        val modifier = { nouvelle: org.unicornradio.app.lecture.Reveil.Alarme ->
+            val quand = reveil.garder(this, nouvelle)
+            if (nouvelle.actif) direLaProgrammation(nouvelle, quand)
+            reglerLAlarme(id)
+        }
+        fenetreDeLignes(premiere.nom ?: getString(R.string.sans_nom), chaqueSeconde = compte, fermer = { montrerLesAlarmes(premiere.genre) }) {
+            val a = reveil.alarme(this, id) ?: return@fenetreDeLignes null
+            val lignes = ArrayList<Ligne>()
+            lignes += Ligne(
+                titre = getString(if (compte) R.string.ligne_lance else R.string.ligne_en_marche),
+                detail = if (compte && a.actif && a.fin > System.currentTimeMillis()) {
+                    getString(R.string.compte_detail_fin, heureDe(a.fin)) + " · " + getString(R.string.compte_detail_reste, resteTexte(a.fin - System.currentTimeMillis()))
+                } else null,
+                coche = a.actif,
+                surBascule = { oui ->
+                    val quand = reveil.basculer(this, id, oui)
+                    if (oui) direLaProgrammation(a, quand)
+                },
+            )
+            lignes += Ligne(getString(R.string.ligne_nom), a.nom ?: getString(R.string.sans_nom), surAppui = {
+                demanderLeNom(a.nom, annuler = { reglerLAlarme(id) }) { nom -> modifier(a.copy(nom = nom)) }
+            })
+            if (compte) {
+                lignes += Ligne(getString(R.string.ligne_duree), reveil.dureeTexte(a.minutes), surAppui = {
+                    // Une durée changée relance le compte s'il tournait : sa fin suit.
+                    choisirLaDuree(a.minutes, annuler = { reglerLAlarme(id) }) { minutes ->
+                        modifier(a.copy(minutes = minutes, fin = if (a.actif) System.currentTimeMillis() + minutes * 60_000L else 0L))
+                    }
+                })
+            } else {
+                lignes += Ligne(getString(R.string.ligne_heure), reveil.heureTexte(a.heure, a.minute), surAppui = {
+                    choisirLHeure(a.heure, a.minute, annuler = { reglerLAlarme(id) }) { h, m -> modifier(a.copy(heure = h, minute = m, actif = true, saute = 0L)) }
+                })
+                if (a.nom != null) {
+                    lignes += Ligne(getString(R.string.ligne_jours), reveil.joursTexte(this, a.jours, getString(R.string.reveil_une_fois)), surAppui = {
+                        choisirLesJours(a.jours, annuler = { reglerLAlarme(id) }) { jours -> modifier(a.copy(jours = jours, saute = 0L)) }
+                    })
+                }
+            }
+            lignes += Ligne(getString(R.string.ligne_son), reveil.sonTexte(a.son), surAppui = {
+                choisirLeSon(a.son, annuler = { reglerLAlarme(id) }) { son -> modifier(a.copy(son = son)) }
+            })
+            lignes += Ligne(
+                titre = getString(R.string.ligne_progressif),
+                detail = getString(if (a.progressif) R.string.ligne_progressif_oui else R.string.ligne_progressif_non),
+                coche = a.progressif,
+                surBascule = { oui -> reveil.alarme(this, id)?.let { reveil.garder(this, it.copy(progressif = oui)) } },
+            )
+            lignes += Ligne(getString(R.string.alarme_supprimer), surAppui = {
+                reveil.supprimer(this, id)
+                montrerLesAlarmes(a.genre)
+            })
+            lignes
+        }
+    }
+
+    /** « Mémoriser sous ce nom » : vide, l'alarme sert une fois et n'est pas gardée. */
+    private fun demanderLeNom(avant: String?, annuler: () -> Unit = {}, suite: (String?) -> Unit) {
+        val dp = resources.displayMetrics.density
+        val champ = EditText(this).apply {
+            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_CAP_SENTENCES
+            hint = getString(R.string.nom_facultatif)
+            imeOptions = android.view.inputmethod.EditorInfo.IME_FLAG_NO_EXTRACT_UI
+            setText(avant ?: "")
+            setSelection(text.length)
+        }
+        val cadre = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding((24 * dp).toInt(), (8 * dp).toInt(), (24 * dp).toInt(), 0)
+            addView(TextView(this@MainActivity).apply { setText(R.string.memoriser_sous_ce_nom) })
+            addView(champ)
+        }
+        MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.alarme_nom)
+            .setView(cadre)
+            .setNegativeButton(R.string.annuler) { _, _ -> annuler() }
+            .setPositiveButton(R.string.suivant) { _, _ -> suite(champ.text.toString().trim().ifEmpty { null }) }
+            .show()
+        champ.requestFocus()
+    }
+
+    /** Des roues, heures et minutes (matin, après-midi en 12 h) ; un appui sur un nombre le fait taper au clavier. */
+    private fun choisirLHeure(heure: Int, minute: Int, annuler: () -> Unit = {}, suite: (Int, Int) -> Unit) {
+        val vue = layoutInflater.inflate(R.layout.heure_du_reveil, null)
+        val roues = vue.findViewById<android.widget.TimePicker>(R.id.heureDuReveil).apply {
+            setIs24HourView(android.text.format.DateFormat.is24HourFormat(this@MainActivity))
+            this.hour = heure
+            this.minute = minute
+        }
+        MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.reveil_heure)
+            .setView(vue)
+            .setNegativeButton(R.string.annuler) { _, _ -> annuler() }
+            .setPositiveButton(R.string.valider) { _, _ ->
+                // Un nombre tapé au clavier n'est pris qu'en quittant son champ : le retirer d'abord.
+                roues.clearFocus()
+                suite(roues.hour, roues.minute)
+            }
+            .show()
+    }
+
+    /** La durée, sur deux roues, heures et minutes. */
+    private fun choisirLaDuree(minutesAvant: Int, annuler: () -> Unit = {}, suite: (Int) -> Unit) {
+        val dp = resources.displayMetrics.density
+        val heures = android.widget.NumberPicker(this).apply {
+            minValue = 0; maxValue = 23; value = minutesAvant / 60
+            setFormatter { "$it h" }
+        }
+        val minutes = android.widget.NumberPicker(this).apply {
+            minValue = 0; maxValue = 59; value = minutesAvant % 60
+            setFormatter { String.format(java.util.Locale.ROOT, "%02d min", it) }
+        }
+        val roues = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = android.view.Gravity.CENTER
+            setPadding(0, (8 * dp).toInt(), 0, 0)
+            addView(heures)
+            addView(minutes, LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply { marginStart = (24 * dp).toInt() })
+        }
+        MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.compte_duree)
+            .setView(roues)
+            .setNegativeButton(R.string.annuler) { _, _ -> annuler() }
+            .setPositiveButton(R.string.valider) { _, _ ->
+                heures.clearFocus(); minutes.clearFocus()
+                val total = heures.value * 60 + minutes.value
+                if (total > 0) suite(total) else annuler()
+            }
+            .show()
+    }
+
+    /** Les jours ; aucun, une seule fois. */
+    private fun choisirLesJours(avant: Set<Int>, annuler: () -> Unit = {}, suite: (Set<Int>) -> Unit) {
+        val jours = reveil.JOURS
+        val noms = java.text.DateFormatSymbols.getInstance(resources.configuration.locales[0]).weekdays
+        val coches = jours.map { it in avant }.toBooleanArray()
+        MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.reveil_jours)
+            .setMultiChoiceItems(jours.map { noms[it].replaceFirstChar { c -> c.titlecase() } }.toTypedArray(), coches) { _, i, oui -> coches[i] = oui }
+            .setNegativeButton(R.string.annuler) { _, _ -> annuler() }
+            .setPositiveButton(R.string.valider) { _, _ -> suite(jours.filterIndexed { i, _ -> coches[i] }.toSet()) }
+            .show()
+    }
+
+    /**
+     * Le son : « Sonnerie du téléphone… » (le sélecteur d'Android) en
+     * tête, puis mes stations. Un appui coche, « OK » prend ; celui d'avant est coché.
+     */
+    private fun choisirLeSon(avant: org.unicornradio.app.lecture.Reveil.Son, annuler: () -> Unit = {}, suite: (org.unicornradio.app.lecture.Reveil.Son) -> Unit) {
+        val stations = toutesMesStations()
+        val sonnerieAvant = avant as? org.unicornradio.app.lecture.Reveil.Son.Sonnerie
+        // La sonnerie du téléphone en tête, pour qu'on la voie ; les stations ensuite.
+        val noms = listOf(sonnerieAvant?.let { getString(R.string.sonnerie_choisie, it.titre) } ?: getString(R.string.sonnerie_du_telephone)) + stations.map { it.nom }
+        var choisi = when (avant) {
+            is org.unicornradio.app.lecture.Reveil.Son.DeStation -> stations.indexOfFirst { it.uuid == avant.station.uuid }.let { if (it < 0) -1 else it + 1 }
+            is org.unicornradio.app.lecture.Reveil.Son.Sonnerie -> 0
+        }
+        MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.son_titre)
+            .setSingleChoiceItems(noms.toTypedArray(), choisi) { _, i -> choisi = i }
+            .setNegativeButton(R.string.annuler) { _, _ -> annuler() }
+            .setPositiveButton(R.string.valider) { _, _ ->
+                when {
+                    choisi in 1..stations.size -> {
+                        val son = org.unicornradio.app.lecture.Reveil.Son.DeStation(stations[choisi - 1])
+                        reveil.noterLeSon(this, son)
+                        suite(son)
+                    }
+                    choisi == 0 -> {
+                        apresLaSonnerie = { son -> reveil.noterLeSon(this, son); suite(son) }
+                        val intention = Intent(android.media.RingtoneManager.ACTION_RINGTONE_PICKER)
+                            .putExtra(android.media.RingtoneManager.EXTRA_RINGTONE_TYPE, android.media.RingtoneManager.TYPE_ALARM)
+                            .putExtra(android.media.RingtoneManager.EXTRA_RINGTONE_SHOW_SILENT, false)
+                            .putExtra(android.media.RingtoneManager.EXTRA_RINGTONE_SHOW_DEFAULT, true)
+                            .putExtra(android.media.RingtoneManager.EXTRA_RINGTONE_EXISTING_URI, sonnerieAvant?.let { Uri.parse(it.uri) })
+                        try {
+                            choisirUneSonnerie.launch(intention)
+                        } catch (e: Exception) {
+                            apresLaSonnerie = null
+                            Log.w(Fichiers.JOURNAL, "alarme : pas de sélecteur de sonneries : ${e.message}")
+                        }
+                    }
+                    else -> annuler()
+                }
+            }
+            .show()
+    }
+
+    /** Mes stations, favoris puis dossiers, chacune une fois. */
+    private fun toutesMesStations(): List<Station> {
+        val racine = maListe.charger() ?: return emptyList()
+        return (racine.stations + racine.tousLesDossiers().flatMap { it.stations }).distinctBy { it.uuid }
+    }
+
     /** « À propos » : ce que fait l'application, sans compte, sans collecte, à qui elle parle, la licence, le compteur. */
     private fun montrerLAPropos() {
         MaterialAlertDialogBuilder(this)
@@ -1282,16 +1888,18 @@ class MainActivity : AppCompatActivity() {
         retour.isEnabled = true
         barre.navigationIcon = if (accueil) null else getDrawable(R.drawable.ic_retour)
         barre.logo = if (accueil) getDrawable(R.drawable.logo) else null
-        barre.title = when {
-            p != null -> p.nom
-            file -> getString(R.string.liste_de_lecture)
-            else -> getString(R.string.app_name)
-        }
-        barre.subtitle = when {
-            p != null -> if (episodes.isEmpty()) getString(R.string.flux_en_cours) else p.auteur
-            file -> null
-            else -> sousTitreDeLaRacine()
-        }
+        titrer(
+            when {
+                p != null -> p.nom
+                file -> getString(R.string.liste_de_lecture)
+                else -> getString(R.string.app_name)
+            },
+            when {
+                p != null -> if (episodes.isEmpty()) getString(R.string.flux_en_cours) else p.auteur
+                file -> null
+                else -> sousTitreDeLaRacine()
+            },
+        )
         onglets.visibility = if (accueil) View.VISIBLE else View.GONE
         podcastsPanneau.visibility = if (accueil) View.VISIBLE else View.GONE
         episodesPanneau.visibility = if (p == null) View.GONE else View.VISIBLE
@@ -1669,6 +2277,22 @@ class MainActivity : AppCompatActivity() {
         c.seekTo((c.currentPosition + ms).coerceIn(0, duree))
     }
 
+    /** La vitesse des épisodes : le choix, gardé, appliqué tout de suite à l'épisode en cours. */
+    private fun choisirLaVitesse() {
+        val choix = org.unicornradio.app.lecture.Vitesse.CHOIX
+        val actuelle = org.unicornradio.app.lecture.Vitesse.lue(this)
+        MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.vitesse_de_lecture)
+            .setSingleChoiceItems(choix.map { org.unicornradio.app.lecture.Vitesse.texte(this, it) }.toTypedArray(), choix.indexOf(actuelle)) { dialogue, i ->
+                org.unicornradio.app.lecture.Vitesse.garder(this, choix[i])
+                controleur?.let { c -> if (c.currentMediaItem?.estUnEpisode == true) c.setPlaybackSpeed(choix[i]) }
+                lectureVitesse.text = org.unicornradio.app.lecture.Vitesse.texte(this, choix[i])
+                dialogue.dismiss()
+            }
+            .setNegativeButton(R.string.annuler, null)
+            .show()
+    }
+
     /** La barre et le temps restant de l'épisode en cours, sauf pendant que le doigt tient la barre. */
     private fun rafraichirAvancement() {
         val c = controleur ?: return
@@ -1696,6 +2320,22 @@ class MainActivity : AppCompatActivity() {
         c.setMediaItems(stations.map { it.versElement() }, index, C.TIME_UNSET)
         c.prepare()
         c.play()
+    }
+
+    /**
+     * À l'ouverture, un lecteur vide reçoit la dernière écoute, en pause :
+     * la ligne de lecture la montre, un appui sur lecture la relance.
+     */
+    private fun remettreLaDerniereEcoute() {
+        val c = controleur ?: return
+        if (c.mediaItemCount > 0) return
+        lifecycleScope.launch {
+            val a = withContext(Dispatchers.IO) { org.unicornradio.app.lecture.DerniereEcoute.aJouer(this@MainActivity) } ?: return@launch
+            val lecteur = controleur ?: return@launch
+            if (lecteur.mediaItemCount > 0) return@launch
+            lecteur.setMediaItems(a.elements, a.index, a.positionMs)
+            rafraichirLecture()
+        }
     }
 
     private fun basculerLecture() {
@@ -1812,6 +2452,7 @@ class MainActivity : AppCompatActivity() {
         lectureAvancement.visibility = if (episode) View.VISIBLE else View.GONE
         minuterie.removeCallbacks(avancement)
         if (episode) { rafraichirAvancement(); minuterie.postDelayed(avancement, 1_000) }
+        if (episode) lectureVitesse.text = org.unicornradio.app.lecture.Vitesse.texte(this, org.unicornradio.app.lecture.Vitesse.lue(this))
         val enLecture = c.playWhenReady && erreur == null
         lectureBouton.setImageResource(if (enLecture) R.drawable.ic_pause else R.drawable.ic_lecture)
         lectureBouton.contentDescription = getString(if (enLecture) R.string.pause else R.string.lire)
@@ -1825,7 +2466,8 @@ class MainActivity : AppCompatActivity() {
         lectureInitiales.text = nom.split(Regex("\\s+")).filter { it.isNotEmpty() }
             .take(2).joinToString("") { it.first().uppercaseChar().toString() }
         lectureInitiales.visibility = View.VISIBLE
-        val logo = fiche.artworkUri
+        // Le logo par défaut est pour le lecteur d'Android ; ici, sans logo, les initiales.
+        val logo = fiche.artworkUri?.takeIf { it != org.unicornradio.app.lecture.LOGO_PAR_DEFAUT }
         if (logo != null) {
             lectureLogo.load(logo) { listener(onSuccess = { _, _ -> lectureInitiales.visibility = View.GONE }) }
         } else {

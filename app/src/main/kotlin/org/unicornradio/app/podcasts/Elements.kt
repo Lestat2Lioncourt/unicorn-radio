@@ -21,7 +21,7 @@ fun Episode.versElement(adresse: String = url): MediaItem = MediaItem.Builder()
             .setTitle(titre)
             .setArtist(podcast)
             .setAlbumTitle(podcast)
-            .setArtworkUri(vignette?.toUri())
+            .setArtworkUri(vignette?.toUri() ?: org.unicornradio.app.lecture.LOGO_PAR_DEFAUT)
             .setMediaType(MediaMetadata.MEDIA_TYPE_PODCAST_EPISODE)
             .setExtras(
                 bundleOf(

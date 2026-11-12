@@ -3,6 +3,84 @@
 Une entrée par chantier, la plus récente en tête. Le détail de chacun est
 dans `correctifs/`.
 
+## 2026-11-12 — 039 · La licorne dans les notifications
+
+Une licorne d'une couleur, dessinée pour la barre d'état, remplace
+l'icône de lecture de Media3 dans toutes les notifications ; le logo en
+couleurs en grande icône pour les alarmes et ce qui est programmé.
+
+## 2026-11-12 — 038 · Ce qui est programmé, dans les notifications
+
+Une notification discrète par compte à rebours lancé, le temps qui reste
+défilant, « Annuler » ; une pour le prochain réveil, son jour et son
+heure, « Ne pas sonner cette fois ». Un appui ouvre la liste.
+
+## 2026-11-12 — 037 · Les réveils et les comptes à rebours
+
+Autant de réveils et de comptes à rebours qu'on veut, deux entrées du
+menu, chacun son nom, son interrupteur, ses réglages d'un appui. Le son :
+une station ou une sonnerie du téléphone ; le volume progressif à
+cocher. Sans nom, il sert une fois. Changer l'heure d'un réveil le remet
+en marche.
+
+## 2026-11-12 — 036 · La trace des plantages
+
+Un plantage est écrit dans un fichier ; à l'ouverture suivante, sa trace
+est montrée une fois, à copier ou envoyer.
+
+## 2026-11-12 — 035 · Le réveil radio
+
+« Réveil radio… » dans le menu : une heure, des jours, une station de mes
+listes. Elle démarre une minute avant, en muet, le temps que la
+publicité passe ; à l'heure, le son monte du silence au plein en une
+minute, au volume du réveil ; la sonnerie du téléphone si elle ne joue
+pas ; arrêt seul au bout d'une heure.
+
+## 2026-11-12 — 034 · Le widget
+
+Un widget pour l'écran d'accueil : ce qui joue ou la dernière écoute, le
+titre en cours, précédent, lecture ou pause, suivant, arrêter. Application fermée,
+« lecture » reprend la dernière écoute.
+
+## 2026-11-12 — 033 · La dernière écoute
+
+À l'ouverture, la dernière station ou le dernier épisode attend en pause
+sur la ligne de lecture, un appui la relance. Un casque ou les commandes
+d'Android la reprennent aussi, application fermée.
+
+## 2026-11-12 — 032 · Le paysage
+
+En paysage, à gauche les icônes, le titre en entier, les onglets et les panneaux de recherche,
+à droite la liste sur toute la hauteur, en bas le lecteur sur toute la
+largeur. Tourner le téléphone ne perd plus l'endroit où l'on est. Le
+clavier ne couvre plus l'écran en paysage.
+
+## 2026-11-12 — 031 · L'import et le serveur quittent la barre
+
+L'icône « Importer une liste… » de la barre du haut est retirée :
+l'entrée du menu « … » et le bouton de l'écran vide restent. L'icône du
+serveur devient « Serveur… », en tête du menu « … ». La barre ne garde
+que la loupe et les drapeaux, et le nom de l'application y tient.
+
+## 2026-11-11 — 030 · Reprendre au retour du réseau
+
+Une lecture tombée sur une coupure de réseau repart seule quand Android
+voit le réseau revenu, à la même position pour un épisode, avec un
+message ; pas après une pause ou un arrêt, ni au-delà de trente minutes.
+Hors ligne, l'annuaire n'est plus consulté pour rien.
+
+## 2026-11-11 — 029 · La vitesse des épisodes, reculer 15 s, avancer 30 s
+
+Sur la ligne d'un épisode, « 1× » choisit la vitesse, de 0,75× à 2×, la
+même pour tous les épisodes et gardée ; les stations restent à 1×.
+Avancer saute désormais 30 secondes, reculer toujours 15 ; les deux
+icônes portent leur nombre.
+
+## 2026-11-11 — 028 · Le droit d'auteur
+
+« © 2026 Lestat2Lioncourt » dans « À propos » et dans la section Licence
+du README, comme la GPL le recommande.
+
 ## 2026-11-11 — 027 · À propos
 
 « À propos », en bas du menu « … » : ce que fait l'application, sans

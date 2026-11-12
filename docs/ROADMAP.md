@@ -87,14 +87,20 @@ Décidés le 2026-11-11, en pensant d'abord à qui n'a que le téléphone.
    - l'emplacement devenu inaccessible est dit une fois, et l'entrée du
      menu redevient « à régler ».
 4. **La vitesse de lecture des podcasts**, et les sauts de quinze et
-   trente secondes.
+   trente secondes. **Fait le 2026-11-11 (029).**
 5. **Reprendre seule au retour du réseau** : une lecture tombée sur une
-   coupure repart quand le réseau revient, sans appui.
+   coupure repart quand le réseau revient, sans appui. **Fait le
+   2026-11-11 (030).**
 
-Ensuite, à voir : le réveil radio, la dernière station relancée d'un
-appui à l'ouverture, Android Auto, un widget, les titres aimés, l'import et
-l'export OPML des podcasts, le téléchargement automatique des nouveaux
-épisodes, un écran de diagnostic avec le journal.
+Ensuite, à voir. Faits le 2026-11-12 : la dernière écoute relancée d'un
+appui (033), un widget (034), le réveil radio (035), devenu des réveils
+et des comptes à rebours nommés, une station ou une sonnerie du
+téléphone, le volume progressif à cocher (037), annoncés dans les
+notifications (038) ; et, en chemin, le paysage (032), la trace des
+plantages (036), la licorne des notifications (039). Restent : Android
+Auto, les titres aimés, l'import et l'export OPML des podcasts, le
+téléchargement automatique des nouveaux épisodes, un écran de diagnostic
+avec le journal (la trace des plantages en est un premier morceau).
 
 ## Plus tard, peut-être
 
@@ -108,8 +114,10 @@ l'export OPML des podcasts, le téléchargement automatique des nouveaux
   est seul maître de la liste, le téléphone en tire la copie et lui renvoie
   ses gestes, horodatés et rejouables, faits hors ligne compris. Tant qu'elle
   n'est pas appariée, l'application reste en mode fichiers, avec ses favoris
-  locaux, versés au serveur à l'appariement. Rien n'existe encore d'aucun
-  côté ; Unicorn-TV construit les routes, l'application vient ensuite.
+  locaux, versés au serveur à l'appariement. **Faite** : l'appariement
+  par QR code ou code court, la copie tirée du serveur, les gestes poussés
+  et rejoués, l'adresse du serveur gardée et retrouvée au changement de
+  réseau (020), les écoutes des podcasts partagées.
 - Un égaliseur, comme sur le bureau. La minuterie d'extinction, les
   titres passés, le site et l'adresse d'une station, eux, sont faits
   (013, 014).
@@ -120,6 +128,30 @@ l'export OPML des podcasts, le téléchargement automatique des nouveaux
   d'Android, qui confirme encore ; « Plus tard » redemande le lendemain.
   La clef de signature, stable et hors du dépôt, et la procédure
   `prompts/publier.md` étaient les prérequis.
+- **Une version premium à prix modique**, évoquée le 2026-11-12, rien de
+  décidé. Ce qui pèse :
+  - la GPL permet de vendre, mais quiconque peut redistribuer le code et
+    l'APK gratuitement, et retirer une vérification de licence d'un code
+    public ; seul auteur, on peut garder des fonctions premium hors du
+    dépôt public, sous une autre licence ;
+  - payer dans l'application (Google Play Billing) suppose le Play Store,
+    écarté plus bas : compte, frais, revue, 15 % de commission ;
+  - vendre hors du Play Store : une plateforme qui encaisse et déclare la
+    TVA européenne à notre place (« merchant of record »), et une clef
+    vérifiée hors ligne, pour tenir « aucune collecte » ;
+  - en France, des ventes régulières demandent un statut (la
+    micro-entreprise suffit) ; des dons sont aussi un revenu à déclarer ;
+  - le plus simple et le plus fidèle à la GPL : rester gratuit, avec un
+    lien « Soutenir le projet » (Liberapay, Ko-fi, GitHub Sponsors) dans
+    « À propos » et le README ;
+  - la variante discutée le même jour, un **soutien annuel** (par exemple
+    5 € par an) : reste un don, récurrent, tant que rien n'est donné en
+    échange, ni fonction ni badge ; dire « soutien annuel », pas
+    « abonnement ». Le prélèvement et ses rappels, c'est la plateforme
+    (Liberapay, GitHub Sponsors). Dans l'application, sur l'honneur et
+    sans réseau : « J'ai fait un don » note la date sur le téléphone, un
+    an après un rappel discret propose de renouveler ; sans cela, au plus
+    un rappel discret par an. À reprendre dans quelques semaines.
 
 ## Écarté
 

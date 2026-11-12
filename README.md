@@ -43,7 +43,8 @@ Gradle wrapper does the rest:
 
 ## Licence
 
-GNU GPL v3.0, like Unicorn-TV. See [LICENSE](LICENSE).
+© 2026 Lestat2Lioncourt. GNU GPL v3.0 only, like Unicorn-TV. See
+[LICENSE](LICENSE).
 
 ---
 
@@ -89,4 +90,5 @@ Un SDK Android avec la plateforme 36 et les build-tools 36, un JDK 17 ou
 
 ## Licence
 
-GNU GPL v3.0, comme Unicorn-TV. Voir [LICENSE](LICENSE).
+© 2026 Lestat2Lioncourt. GNU GPL v3.0 seulement, comme Unicorn-TV. Voir
+[LICENSE](LICENSE).
