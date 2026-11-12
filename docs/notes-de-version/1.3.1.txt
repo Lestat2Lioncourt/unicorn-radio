@@ -1,0 +1,35 @@
+[FR] Réveils, comptes à rebours, widget et mode paysage
+
+Réveils radio et Comptes-à-rebours :
+Plusieurs réveils mémorisés possibles.
+Lancement 1mn avant l'heure en sourdine pour éviter d'être réveillé par une pub.
+Montée progressive du son.
+
+Widget sur l'écran d'accueil :
+la station en cours, lecture, pause, précédent, suivant, arrêt
+À l'ouverture, la dernière station ou le dernier épisode attend d'un appui
+
+Podcasts :
+Vitesse de lecture de 0,75× à 2×, reculer de 15 secondes, avancer de 30
+La lecture reprend seule quand le réseau revient, après une interruption réseau de plus de 25 secondes
+
+Mode paysage :
+Refonte de l'affichage
+
+[EN] Alarms, countdown timers, widget, and landscape mode
+
+Radio alarms and countdown timers:
+Multiple alarms can be saved.
+Playback starts silently one minute before the scheduled time to avoid being woken up by an advertisement.
+Gradual volume increase.
+
+Home screen widget:
+Displays the current station; includes controls for play, pause, previous, next, and stop.
+Upon opening, the app presents the last-played station or episode, ready for you to tap and start.
+
+Podcasts:
+Playback speed adjustable from 0.75× to 2×; skip back 15 seconds, skip forward 30 seconds.
+Playback resumes automatically when the network connection is restored, following a network interruption lasting longer than 25 seconds.
+
+Landscape mode:
+Redesigned display layout.
