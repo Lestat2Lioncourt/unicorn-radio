@@ -105,9 +105,10 @@ dossiers en place.
 
 ---
 
-Dernière publication : 1.2.1, code 32, le 2026-11-11, la première sous
-la règle des numéros (essais 1.2.0 à 1.2.0.5, codes 26 à 31). Avant
-elle, la 1.1.5, code 25, le même jour, après la 1.1.4,
+Dernière publication : 1.3.1, code 56, le 2026-11-12 (essais 1.3.0 à
+1.3.0.22, codes 33 à 55). Avant elle, la 1.2.1, code 32, le 2026-11-11,
+la première sous la règle des numéros (essais 1.2.0 à 1.2.0.5, codes 26
+à 31). Avant elle, la 1.1.5, code 25, le même jour, après la 1.1.4,
 code 24. Avant elles, la 1.1.3,
 code 23, le 2026-11-10, et la 1.1.2,
 code 22, le 2026-11-09, après la 1.1.1, code 21, le même soir (la 1.0.1,
