@@ -309,6 +309,17 @@
                 android:textColor="?attr/colorOnSurfaceVariant" />
         </LinearLayout>
 
+        <!-- Le cœur : aimer le titre que la station annonce ; seulement quand il y en a un. -->
+        <ImageButton
+            android:id="@+id/lectureAime"
+            android:layout_width="40dp"
+            android:layout_height="48dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/aimer_ce_titre"
+            android:src="@drawable/ic_coeur_vide"
+            android:visibility="gone"
+            app:tint="?attr/colorPrimary" />
+
         <!-- La minuterie d'extinction : l'icône, et dessous les minutes qui restent quand elle est programmée. -->
         <LinearLayout
             android:id="@+id/lectureMinuterie"
@@ -468,4 +479,16 @@
                 android:textStyle="bold" />
         </FrameLayout>
     </LinearLayout>
+
+    <!-- Le spectre, sous la ligne de lecture : en grand d'un appui, ses réglages d'un appui long. -->
+    <org.unicornradio.app.VueSpectre
+        android:id="@+id/lectureSpectre"
+        android:layout_width="match_parent"
+        android:layout_height="36dp"
+        android:background="?attr/colorSurfaceContainerHigh"
+        android:clickable="true"
+        android:contentDescription="@string/spectre_titre"
+        android:focusable="true"
+        android:paddingBottom="4dp"
+        android:visibility="gone" />
 </LinearLayout>

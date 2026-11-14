@@ -14,6 +14,10 @@
     <string name="fichier_exporte">File written: %d stations</string>
     <string name="rien_a_exporter">Nothing to export yet</string>
     <string name="export_echoue">Could not write the file: %s</string>
+    <string name="importer_des_podcasts">Import podcasts (OPML)…</string>
+    <string name="exporter_mes_podcasts">Export my podcasts (OPML)…</string>
+    <string name="opml_exporte">File written: %d podcasts</string>
+    <string name="lecture_des_flux">Reading %d feeds…</string>
     <string name="annuler">Cancel</string>
     <string name="connexion">Connecting…</string>
     <string name="en_direct">Live</string>
@@ -232,6 +236,27 @@
     <string name="minuterie_annuler">Cancel the timer</string>
     <string name="minuterie_arret_dans">Stop in %d min</string>
     <string name="precedemment">Previously · %s</string>
+    <string name="aimer_ce_titre">Like this title</string>
+    <string name="titre_aime">Liked: %s</string>
+    <string name="titre_plus_aime">No longer liked: %s</string>
+    <string name="titres_aimes_menu">Liked titles…</string>
+    <string name="titres_aimes">Liked titles</string>
+    <string name="titres_aimes_rien">No liked titles yet.\n\nWhile a station plays, tap the heart next to the title it announces. In “Previously”, tap a past title to like it.</string>
+    <string name="chercher_sur_le_web">Search the web</string>
+    <string name="partager">Share…</string>
+    <string name="copier_le_titre">Copy</string>
+    <string name="titre_copie">Title copied</string>
+    <string name="retirer">Remove</string>
+    <string name="selectionner">Select</string>
+    <string name="tout_selectionner">Select all</string>
+    <plurals name="n_selectionnes">
+        <item quantity="one">%d selected</item>
+        <item quantity="other">%d selected</item>
+    </plurals>
+    <plurals name="n_retires">
+        <item quantity="one">%d episode removed from the playlist</item>
+        <item quantity="other">%d episodes removed from the playlist</item>
+    </plurals>
     <string name="precedemment_rien">Nothing yet: the titles the station announces pile up here while you listen.</string>
     <string name="liste_de_lecture">Playlist</string>
     <string name="lire_ensuite">Play next</string>
@@ -266,4 +291,83 @@
     <!-- Les noms des langues, dans leur langue : les mêmes partout. -->
     <string name="langue_francais" translatable="false">Français</string>
     <string name="langue_anglais" translatable="false">English</string>
+
+    <!-- The equalizer. -->
+    <string name="eq_menu">Equalizer…</string>
+    <string name="eq_titre">Equalizer</string>
+    <string name="eq_activer">Equalizer on</string>
+    <string name="eq_prereglage">Preset: %s</string>
+    <string name="eq_prereglages">Presets</string>
+    <string name="eq_plat">Flat</string>
+    <string name="eq_rock">Rock</string>
+    <string name="eq_pop">Pop</string>
+    <string name="eq_jazz">Jazz</string>
+    <string name="eq_classique">Classical</string>
+    <string name="eq_basses">Bass</string>
+    <string name="eq_voix">Voice</string>
+    <string name="eq_perso">Custom</string>
+    <string name="eq_enregistrer_sous">Save as…</string>
+    <string name="eq_nom">Preset name</string>
+    <string name="eq_supprimer">Delete this preset</string>
+    <string name="eq_supprimer_texte">Delete the preset “%s”?</string>
+
+    <!-- The spectrum. -->
+    <string name="spectre_menu">Spectrum…</string>
+    <string name="spectre_titre">Spectrum</string>
+    <string name="spectre_forme">Shape</string>
+    <string name="spectre_miroir">Mirror</string>
+    <string name="spectre_barres">Bars with peaks</string>
+    <string name="spectre_courbe">Curve</string>
+    <string name="spectre_onde">Wave</string>
+    <string name="spectre_aucune">None</string>
+    <string name="spectre_palette">Colours</string>
+    <string name="spectre_arc">Rainbow</string>
+    <string name="spectre_unie">App colour</string>
+    <string name="spectre_vumetre">VU meter</string>
+    <string name="spectre_bandes">Bands</string>
+    <string name="spectre_masquer">Hide the spectrum</string>
+    <string name="spectre_afficher">Show the spectrum</string>
+    <string name="spectre_reglages">Spectrum settings…</string>
+
+    <!-- Just for fun: the download count at first launch. -->
+    <string name="rang_bienvenue">Welcome!</string>
+    <string name="rang_phrase">You are the %s user of Unicorn-Radio.</string>
+    <string name="rang_merci">Thanks</string>
+    <string name="rang_changer">Change my rank</string>
+
+    <!-- Swapping radios with a nearby phone, over Bluetooth. -->
+    <string name="proche_menu">Swap radios with a nearby phone…</string>
+    <string name="proche_titre">Nearby phone</string>
+    <string name="proche_envoyer_dossier">Send to a nearby phone</string>
+    <string name="exporter_ce_dossier">Export this folder…</string>
+    <string name="proche_envoyer">Send my radios</string>
+    <string name="proche_recevoir">Receive radios</string>
+    <string name="proche_pas_de_bluetooth">This phone has no Bluetooth.</string>
+    <string name="proche_permission_refusee">Without the “Nearby devices” permission, phones cannot find each other.</string>
+    <string name="proche_localisation">Turn on location: before Android 12, it is needed to find nearby phones.</string>
+    <string name="proche_choisir">Choose the phone</string>
+    <string name="proche_aide_envoyer">On the other phone: ⋮ › Swap radios with a nearby phone › Receive radios. Its name then appears here.</string>
+    <string name="proche_envoi_en_cours">Sending to %s…</string>
+    <string name="proche_envoi_echoue">%s did not answer: “Receive radios” must be open on it.</string>
+    <plurals name="proche_envoyees">
+        <item quantity="one">%1$d radio sent to %2$s</item>
+        <item quantity="other">%1$d radios sent to %2$s</item>
+    </plurals>
+    <string name="proche_en_attente">Waiting, five minutes at most.\n\nThis phone is called “%s”: choose it on the other phone, from “Send my radios”.</string>
+    <string name="proche_reception_echouee">Nothing received.</string>
+    <plurals name="proche_recues">
+        <item quantity="one">%1$s sends you %2$d radio</item>
+        <item quantity="other">%1$s sends you %2$d radios</item>
+    </plurals>
+    <plurals name="proche_dans_dossiers">
+        <item quantity="one">, in %d folder</item>
+        <item quantity="other">, in %d folders</item>
+    </plurals>
+    <string name="proche_ajouter_question">Add them to your list? Nothing of yours is removed, and nothing is added twice.</string>
+    <string name="proche_ajouter">Add</string>
+    <string name="proche_refuser">Decline</string>
+    <plurals name="proche_ajoutees">
+        <item quantity="one">%d radio added</item>
+        <item quantity="other">%d radios added</item>
+    </plurals>
 </resources>

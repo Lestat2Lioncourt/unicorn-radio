@@ -26,6 +26,26 @@
         android:title="@string/exporter_mes_radios"
         app:showAsAction="never" />
     <item
+        android:id="@+id/echangerProche"
+        android:title="@string/proche_menu"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/exporterOpml"
+        android:title="@string/exporter_mes_podcasts"
+        android:visible="false"
+        app:showAsAction="never" />
+    <!-- Le mode sélection de la liste de lecture : retirer les cochés, tout cocher. -->
+    <item
+        android:id="@+id/retirerSelection"
+        android:title="@string/retirer"
+        android:visible="false"
+        app:showAsAction="always" />
+    <item
+        android:id="@+id/toutSelectionner"
+        android:title="@string/tout_selectionner"
+        android:visible="false"
+        app:showAsAction="never" />
+    <item
         android:id="@+id/viderLaListe"
         android:title="@string/vider_la_liste"
         android:visible="false"
@@ -33,6 +53,18 @@
     <item
         android:id="@+id/sauvegarde"
         android:title="@string/sauvegarde_automatique"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/egaliseur"
+        android:title="@string/eq_menu"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/spectre"
+        android:title="@string/spectre_menu"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/titresAimes"
+        android:title="@string/titres_aimes_menu"
         app:showAsAction="never" />
     <item
         android:id="@+id/reveil"

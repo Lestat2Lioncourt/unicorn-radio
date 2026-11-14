@@ -65,7 +65,18 @@ class ServiceLecture : MediaSessionService() {
             .setConnectTimeoutMs(12_000)
             .setReadTimeoutMs(12_000)
         // Le http pour les flux et les épisodes en ligne ; `DefaultDataSource` par-dessus lit aussi les fichiers téléchargés.
-        val lecteur = ExoPlayer.Builder(this)
+        // L'égaliseur, puis la dérivation du spectre, dans la chaîne audio du lecteur.
+        Egaliseur.charger(this)
+        Spectre.charger(this)
+        val rendus = object : androidx.media3.exoplayer.DefaultRenderersFactory(this) {
+            override fun buildAudioSink(context: android.content.Context, enableFloatOutput: Boolean, enableAudioTrackPlaybackParams: Boolean) =
+                androidx.media3.exoplayer.audio.DefaultAudioSink.Builder(context)
+                    .setEnableFloatOutput(enableFloatOutput)
+                    .setEnableAudioOutputPlaybackParameters(enableAudioTrackPlaybackParams)
+                    .setAudioProcessors(arrayOf(Egaliseur.Processeur(), androidx.media3.exoplayer.audio.TeeAudioProcessor(Spectre.capteur)))
+                    .build()
+        }
+        val lecteur = ExoPlayer.Builder(this, rendus)
             .setMediaSourceFactory(DefaultMediaSourceFactory(this).setDataSourceFactory(DefaultDataSource.Factory(this, http)))
             .setAudioAttributes(
                 AudioAttributes.Builder().setUsage(C.USAGE_MEDIA).setContentType(C.AUDIO_CONTENT_TYPE_MUSIC).build(),

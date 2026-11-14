@@ -21,6 +21,18 @@
     <uses-feature android:name="android.hardware.camera" android:required="false" />
     <!-- La mise a jour proposee : ouvrir l'installeur sur l'APK telecharge. Android demande encore a l'utilisateur. -->
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+    <!-- Échanger ses radios avec un téléphone proche, en Bluetooth. Avant
+         Android 12, trouver les téléphones proches passait par la permission
+         de localisation ; depuis, « appareils à proximité », sans localisation. -->
+    <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" />
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" android:maxSdkVersion="30" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" android:maxSdkVersion="30" />
+    <uses-permission
+        android:name="android.permission.BLUETOOTH_SCAN"
+        android:usesPermissionFlags="neverForLocation" />
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+    <uses-permission android:name="android.permission.BLUETOOTH_ADVERTISE" />
+    <uses-feature android:name="android.hardware.bluetooth" android:required="false" />
 
     <!-- La raison d'etre du projet : les flux des stations sont, pour la
          plupart, en http simple. Une application a le droit de le dire. -->
@@ -53,6 +65,8 @@
                 <data android:scheme="file" />
                 <data android:mimeType="application/json" />
                 <data android:mimeType="text/json" />
+                <!-- Un fichier OPML d'une autre application de podcasts. -->
+                <data android:mimeType="text/x-opml" />
             </intent-filter>
         </activity>
 

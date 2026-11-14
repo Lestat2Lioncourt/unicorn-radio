@@ -19,6 +19,16 @@ object LectureFichier {
 
     /** Le texte du fichier, le nom à donner à sa racine ; le noeud racine en retour. */
     fun lire(texte: String, nom: String): Noeud {
+        // Un fichier OPML, d'une autre application de podcasts : ses abonnements seuls.
+        if (org.unicornradio.app.podcasts.Opml.enEst(texte)) {
+            val podcasts = try {
+                org.unicornradio.app.podcasts.Opml.lire(texte)
+            } catch (e: Exception) {
+                throw FichierIllisible("OPML illisible : ${e.message}")
+            }
+            if (podcasts.isEmpty()) throw FichierIllisible("aucun podcast dans ce fichier OPML")
+            return Noeud(titre = nom, sousDossiers = emptyList(), stations = emptyList(), fichier = nom, podcasts = podcasts)
+        }
         val objet = try {
             JSONObject(texte)
         } catch (e: Exception) {

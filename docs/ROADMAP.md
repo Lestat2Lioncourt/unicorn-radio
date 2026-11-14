@@ -97,17 +97,102 @@ appui (033), un widget (034), le réveil radio (035), devenu des réveils
 et des comptes à rebours nommés, une station ou une sonnerie du
 téléphone, le volume progressif à cocher (037), annoncés dans les
 notifications (038) ; et, en chemin, le paysage (032), la trace des
-plantages (036), la licorne des notifications (039). Restent : Android
-Auto, les titres aimés, l'import et l'export OPML des podcasts, le
-téléchargement automatique des nouveaux épisodes, un écran de diagnostic
-avec le journal (la trace des plantages en est un premier morceau).
+plantages (036), la licorne des notifications (039). Faits le
+2026-11-12 et le 13 : l'OPML des podcasts (040), les titres aimés (041),
+la sélection dans la liste de lecture (042). Faits le 2026-11-14 : ranger
+la radio en cours d'écoute (043), échanger ses radios avec un téléphone
+proche, toutes ou un dossier, et exporter un dossier seul (044).
+
+Décidés le 2026-11-13, dans l'ordre :
+
+1. ~~L'égaliseur~~ et ~~le spectre~~ : faits le 2026-11-14 (046). Reste
+   l'égaliseur par station, plus tard.
+2. **Android TV** : voir « Installation sur Android TV » plus bas.
+3. **MilkDrop**, pour les box qui le portent : voir plus bas.
+
+Restent, sans ordre : un écran de diagnostic avec le journal (la trace
+des plantages en est un premier morceau). **Android Auto**, mis de côté
+le 2026-11-12 : Android Auto cache les applications qui ne viennent pas
+du Play Store, et chaque utilisateur devrait passer ses réglages en mode
+développeur et cocher « Sources inconnues », rédhibitoire pour le public
+visé ; rien à essayer sans voiture non plus.
+
+**Le téléchargement automatique des nouveaux épisodes**, mis de côté le
+2026-11-14 : « j'ai peur de télécharger des centaines d'épisodes pour
+les podcasts qui publient beaucoup ». Ce qui avait été décidé, pour le
+jour où on le reprendrait : podcast par podcast, une case « Télécharger
+les nouveaux épisodes » décochée par défaut ; une vérification toutes les
+quelques heures, en wifi seulement, pas sur batterie faible ; seuls les
+épisodes parus après la coche ; au plus les trois derniers téléchargés
+d'office par podcast, les plus anciens effacés, jamais ceux téléchargés à
+la main.
+
+## Installation sur Android TV
+
+Discuté le 2026-11-13, pour une Xiaomi TV Box S de deuxième génération
+(modèle `MiTV-AFKR0`, aussi `MDZ-28-AA` : Amlogic S905X4, Mali-G31,
+OpenGL ES 3.2, Google TV). L'application demande Android 8 ; elle
+s'installe telle quelle sur une box Android TV ou Google TV, mais ne se
+voit pas sur l'écran d'accueil et se mène mal à la télécommande.
+
+**Installer, la première fois.** Pas de navigateur sur Google TV :
+l'application Downloader (AFTVnews, gratuite au Play Store de la box).
+
+1. Mode développeur : *Paramètres* → *Système* → *À propos*, sept appuis
+   sur *Build de l'OS Android TV*.
+2. *Paramètres* → *Applications* → *Sécurité et restrictions* →
+   *Sources inconnues* : autoriser Downloader.
+3. Dans Downloader, l'adresse de l'APK ; Android propose l'installation.
+
+Ensuite, la mise à jour proposée par l'application prend le relais.
+
+**Une adresse fixe.** Le nom de l'APK change à chaque version, et une
+longue adresse se tape mal à la télécommande. À chaque release, une
+copie de l'APK sous le nom fixe `unicorn-radio.apk`, en plus de celle
+numérotée, pour que cette adresse mène toujours à la dernière :
+
+`https://github.com/Lestat2Lioncourt/unicorn-radio/releases/latest/download/unicorn-radio.apk`
+
+Plus court encore : un code Downloader (quelques chiffres, gratuit sur
+leur site) qui mène à cette adresse, donné dans le README. À ajouter à
+`prompts/publier.md` le moment venu.
+
+**Ce qu'il faut changer dans l'application :**
+
+- **Paraître sur l'écran d'accueil de la box** : la catégorie
+  `LEANBACK_LAUNCHER` sur l'activité, une bannière de 320 × 180, et
+  l'écran tactile déclaré non obligatoire (`android.hardware.touchscreen`
+  `required="false"`), sans quoi Android TV la refuse.
+- **La télécommande** : listes et boutons se parcourent déjà aux
+  flèches ; le travail est de **bien montrer ce qui a le focus**, un
+  cadre ou une surbrillance nette vue du canapé, et qu'aucun bouton ne
+  soit hors d'atteinte : la ligne de lecture, les onglets, le menu
+  « … ». L'appui long est OK maintenu, Android TV le donne.
+- **La saisie** : le clavier de la box ou la voix de la télécommande,
+  rien à faire.
+- **L'écran** : la disposition en paysage (032) sert de base, les textes
+  un peu plus grands pour la distance.
+- **Les touches lecture et pause** de la télécommande marchent déjà,
+  par la session de lecture, comme celles du casque.
+- **Un mode télé** : le spectre en plein écran, la station et le titre,
+  comme le mode télé du bureau.
+
+**MilkDrop**, après : projectM, la reprise libre de MilkDrop (LGPL),
+demande OpenGL ES 3. Les Mi Box 3 et Mi Box S de première génération
+(Mali-450, OpenGL ES 2.0) ne le portent pas ; la deuxième génération
+oui, puce modeste, des préréglages légers et un rendu en 720p ou 1080p
+agrandi ; la Nvidia Shield TV, très à l'aise. Il faut le NDK pour
+construire projectM, le son pris dans le lecteur comme pour le spectre,
+un plein écran aux flèches pour changer de préréglage, des préréglages
+dont la licence permet la distribution, et le proposer seulement là où
+OpenGL ES 3 est présent.
 
 ## Plus tard, peut-être
 
 - Les podcasts : les quatre paliers sont faits, chercher et écouter (008),
   « Mes podcasts » (009), la liste de lecture (012), le téléchargement
   (016). Reste, peut-être, le téléchargement d'office des nouveaux
-  épisodes des podcasts suivis.
+  épisodes des podcasts suivis, mis de côté le 2026-11-14 (plus haut).
 - **La synchronisation avec l'Unicorn-TV de la maison**, décidée le
   2026-10-26 et décrite dans `format-d-echange.md` : l'application s'apparie
   à un serveur précis par QR code, ou code court tapé à la main ; le serveur
@@ -118,7 +203,7 @@ avec le journal (la trace des plantages en est un premier morceau).
   par QR code ou code court, la copie tirée du serveur, les gestes poussés
   et rejoués, l'adresse du serveur gardée et retrouvée au changement de
   réseau (020), les écoutes des podcasts partagées.
-- Un égaliseur, comme sur le bureau. La minuterie d'extinction, les
+- L'égaliseur et le spectre, faits le 2026-11-14 (046). La minuterie d'extinction, les
   titres passés, le site et l'adresse d'une station, eux, sont faits
   (013, 014).
 - **Proposer la mise à jour**, demandé le 2026-10-26, fait au 010 le

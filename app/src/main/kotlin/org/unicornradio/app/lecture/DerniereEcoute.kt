@@ -62,18 +62,7 @@ object DerniereEcoute {
         val o = lu(ctx) ?: return null
         return when (o.optString("type")) {
             "station" -> {
-                val url = o.optString("url").ifBlank { return null }
-                val station = Station(
-                    uuid = o.optString("uuid"),
-                    nom = o.optString("nom"),
-                    url = url,
-                    paysCode = o.optString("pays").ifBlank { null }.takeIf { !o.isNull("pays") },
-                    pays = null, page = null,
-                    logo = o.optString("logo").ifBlank { null }.takeIf { !o.isNull("logo") },
-                    etiquettes = null, langue = null, codec = null, debit = null, votes = null,
-                    hls = o.optBoolean("hls"),
-                    ordre = 0,
-                )
+                val station = station(o) ?: return null
                 AJouer(listOf(station.versElement()), 0, C.TIME_UNSET)
             }
             "episode" -> {
@@ -92,6 +81,24 @@ object DerniereEcoute {
             }
             else -> null
         }
+    }
+
+    /** La dernière station écoutée, telle que le lecteur l'avait, ou `null` si c'était un épisode. */
+    fun station(ctx: Context): Station? = lu(ctx)?.takeIf { it.optString("type") == "station" }?.let { station(it) }
+
+    private fun station(o: JSONObject): Station? {
+        val url = o.optString("url").ifBlank { return null }
+        return Station(
+            uuid = o.optString("uuid"),
+            nom = o.optString("nom"),
+            url = url,
+            paysCode = o.optString("pays").ifBlank { null }.takeIf { !o.isNull("pays") },
+            pays = null, page = null,
+            logo = o.optString("logo").ifBlank { null }.takeIf { !o.isNull("logo") },
+            etiquettes = null, langue = null, codec = null, debit = null, votes = null,
+            hls = o.optBoolean("hls"),
+            ordre = 0,
+        )
     }
 
     private fun lu(ctx: Context): JSONObject? =

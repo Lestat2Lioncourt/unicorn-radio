@@ -66,6 +66,9 @@ class ListeAdaptateur(
     /** Pour mes podcasts : le titre du dernier épisode par flux, `null` quand le flux ne répond pas ; absent, pas encore lu. */
     private var derniers: Map<String, String?> = emptyMap()
 
+    /** Dans la liste de lecture en mode sélection : les clefs des épisodes cochés ; `null` hors de ce mode. */
+    var selection: Set<String>? = null
+
     var enCours: String? = null
         set(valeur) {
             if (field == valeur) return
@@ -271,6 +274,18 @@ class ListeAdaptateur(
                 vue.itemView.isActivated = e.mediaId == enCours
                 vue.itemView.alpha = if (ligne.passe) 0.6f else 1f
                 image(vue, e.initiales, e.vignette, coins = 6f)
+                // En mode sélection : un épisode coché est surligné, une coche à la place de sa vignette.
+                val choix = selection
+                if (choix != null) {
+                    val coche = e.clef in choix
+                    vue.itemView.isActivated = coche
+                    if (coche) {
+                        vue.logo?.dispose()
+                        vue.logo?.setImageDrawable(null)
+                        vue.initiales?.text = "✓"
+                        vue.initiales?.visibility = View.VISIBLE
+                    }
+                }
                 val duree = ecoute?.duree ?: e.duree
                 when {
                     ecoute == null || (ecoute.position <= 0 && !ecoute.termine) -> {

@@ -3,6 +3,49 @@
 Une entrée par chantier, la plus récente en tête. Le détail de chacun est
 dans `correctifs/`.
 
+## 2026-11-14 — 046 · L'égaliseur et le spectre
+
+« Égaliseur… » : dix bandes, la courbe de réponse, les préréglages et les
+siens sous un nom. Le spectre sous la ligne de lecture, en grand d'un
+appui, ses formes et ses couleurs d'un appui long, comme sur le bureau.
+Le son traité dans le lecteur, sans permission du micro.
+
+## 2026-11-14 — 045 · « Vous êtes le n-ième utilisateur »
+
+Pour le plaisir : au premier lancement, le total des téléchargements
+GitHub devient son rang, dit une fois à l'accueil, gardé dans « À
+propos », jamais changé par une mise à jour.
+
+## 2026-11-14 — 044 · Échanger ses radios avec un téléphone proche
+
+« Échanger avec un téléphone proche… » dans le menu de l'onglet Radio :
+l'un choisit « Recevoir des radios », l'autre « Envoyer mes radios » et
+touche son téléphone dans la liste. En Bluetooth, sans Internet ; le
+receveur voit qui envoie et combien, et accepte ou refuse. L'appui long
+sur un dossier l'envoie seul, avec ses sous-dossiers, ou l'exporte.
+
+## 2026-11-14 — 043 · Ranger la radio en cours d'écoute
+
+Un appui long sur la ligne de lecture d'une station ouvre son menu :
+ranger dans un dossier, favoris, site, adresse du flux.
+
+## 2026-11-13 — 042 · Sélectionner dans la liste de lecture
+
+« Sélectionner » à l'appui long, puis cocher plusieurs épisodes : les
+retirer d'un coup, tout sélectionner, ou vider la liste, depuis la barre.
+
+## 2026-11-12 — 041 · Les titres aimés
+
+Un cœur sur la ligne de lecture aime le titre que la station annonce ;
+un appui dans « Précédemment » aime un titre passé. « Titres aimés… »
+dans le menu : chercher, partager, copier, retirer.
+
+## 2026-11-12 — 040 · L'OPML des podcasts
+
+Dans l'onglet Podcasts, importer les abonnements d'une autre application
+de podcasts (fichier OPML), leur image et leur auteur lus dans le flux ;
+exporter les siens en OPML.
+
 ## 2026-11-12 — 039 · La licorne dans les notifications
 
 Une licorne d'une couleur, dessinée pour la barre d'état, remplace

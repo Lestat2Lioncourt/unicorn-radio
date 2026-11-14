@@ -13,6 +13,10 @@
     <string name="fichier_exporte">Fichier écrit : %d stations</string>
     <string name="rien_a_exporter">Rien à exporter pour l\'instant</string>
     <string name="export_echoue">Impossible d\'écrire le fichier : %s</string>
+    <string name="importer_des_podcasts">Importer des podcasts (OPML)…</string>
+    <string name="exporter_mes_podcasts">Exporter mes podcasts (OPML)…</string>
+    <string name="opml_exporte">Fichier écrit : %d podcasts</string>
+    <string name="lecture_des_flux">Lecture de %d flux…</string>
     <string name="annuler">Annuler</string>
     <string name="connexion">Connexion…</string>
     <string name="en_direct">En direct</string>
@@ -230,6 +234,27 @@
     <string name="minuterie_annuler">Annuler la minuterie</string>
     <string name="minuterie_arret_dans">Arrêt dans %d min</string>
     <string name="precedemment">Précédemment · %s</string>
+    <string name="aimer_ce_titre">Aimer ce titre</string>
+    <string name="titre_aime">Aimé : %s</string>
+    <string name="titre_plus_aime">Plus aimé : %s</string>
+    <string name="titres_aimes_menu">Titres aimés…</string>
+    <string name="titres_aimes">Titres aimés</string>
+    <string name="titres_aimes_rien">Aucun titre aimé pour l\'instant.\n\nPendant qu\'une station joue, touchez le cœur à côté du titre qu\'elle annonce. Dans « Précédemment », touchez un titre passé pour l\'aimer.</string>
+    <string name="chercher_sur_le_web">Chercher sur le web</string>
+    <string name="partager">Partager…</string>
+    <string name="copier_le_titre">Copier</string>
+    <string name="titre_copie">Titre copié</string>
+    <string name="retirer">Retirer</string>
+    <string name="selectionner">Sélectionner</string>
+    <string name="tout_selectionner">Tout sélectionner</string>
+    <plurals name="n_selectionnes">
+        <item quantity="one">%d sélectionné</item>
+        <item quantity="other">%d sélectionnés</item>
+    </plurals>
+    <plurals name="n_retires">
+        <item quantity="one">%d épisode retiré de la liste</item>
+        <item quantity="other">%d épisodes retirés de la liste</item>
+    </plurals>
     <string name="precedemment_rien">Rien encore : les titres que la station annonce s\'empilent ici au fil de l\'écoute.</string>
     <string name="liste_de_lecture">Liste de lecture</string>
     <string name="lire_ensuite">Lire ensuite</string>
@@ -261,4 +286,83 @@
     <string name="station_disparue_aucune">« %s » n\'est plus dans l\'annuaire, et aucune station ne porte ce nom.</string>
     <string name="station_disparue_plusieurs">« %1$s » n\'est plus dans l\'annuaire. %2$d stations portent ce nom : appui long sur la station pour la retrouver.</string>
     <string name="station_annuaire_injoignable">« %s » ne répond pas, et l\'annuaire non plus.</string>
+
+    <!-- L'égaliseur. -->
+    <string name="eq_menu">Égaliseur…</string>
+    <string name="eq_titre">Égaliseur</string>
+    <string name="eq_activer">Égaliseur activé</string>
+    <string name="eq_prereglage">Préréglage : %s</string>
+    <string name="eq_prereglages">Préréglages</string>
+    <string name="eq_plat">Plat</string>
+    <string name="eq_rock">Rock</string>
+    <string name="eq_pop">Pop</string>
+    <string name="eq_jazz">Jazz</string>
+    <string name="eq_classique">Classique</string>
+    <string name="eq_basses">Basses</string>
+    <string name="eq_voix">Voix</string>
+    <string name="eq_perso">Perso</string>
+    <string name="eq_enregistrer_sous">Enregistrer sous…</string>
+    <string name="eq_nom">Nom du préréglage</string>
+    <string name="eq_supprimer">Supprimer ce préréglage</string>
+    <string name="eq_supprimer_texte">Supprimer le préréglage « %s » ?</string>
+
+    <!-- Le spectre. -->
+    <string name="spectre_menu">Spectre…</string>
+    <string name="spectre_titre">Spectre</string>
+    <string name="spectre_forme">Forme</string>
+    <string name="spectre_miroir">Miroir</string>
+    <string name="spectre_barres">Barres à crêtes</string>
+    <string name="spectre_courbe">Courbe</string>
+    <string name="spectre_onde">Onde</string>
+    <string name="spectre_aucune">Aucune</string>
+    <string name="spectre_palette">Couleurs</string>
+    <string name="spectre_arc">Arc-en-ciel</string>
+    <string name="spectre_unie">Couleur de l\'application</string>
+    <string name="spectre_vumetre">Vu-mètre</string>
+    <string name="spectre_bandes">Bandes</string>
+    <string name="spectre_masquer">Masquer le spectre</string>
+    <string name="spectre_afficher">Afficher le spectre</string>
+    <string name="spectre_reglages">Réglages du spectre…</string>
+
+    <!-- Pour le plaisir : le nombre de téléchargements au premier lancement. -->
+    <string name="rang_bienvenue">Bienvenue !</string>
+    <string name="rang_phrase">Vous êtes le %s utilisateur d\'Unicorn-Radio.</string>
+    <string name="rang_merci">Merci</string>
+    <string name="rang_changer">Changer mon rang</string>
+
+    <!-- Échanger ses radios avec un téléphone proche, en Bluetooth. -->
+    <string name="proche_menu">Échanger avec un téléphone proche…</string>
+    <string name="proche_titre">Téléphone proche</string>
+    <string name="proche_envoyer_dossier">Envoyer à un téléphone proche</string>
+    <string name="exporter_ce_dossier">Exporter ce dossier…</string>
+    <string name="proche_envoyer">Envoyer mes radios</string>
+    <string name="proche_recevoir">Recevoir des radios</string>
+    <string name="proche_pas_de_bluetooth">Ce téléphone n\'a pas de Bluetooth.</string>
+    <string name="proche_permission_refusee">Sans la permission « Appareils à proximité », les téléphones ne peuvent pas se trouver.</string>
+    <string name="proche_localisation">Activez la localisation : avant Android 12, elle sert à trouver les téléphones proches.</string>
+    <string name="proche_choisir">Choisissez le téléphone</string>
+    <string name="proche_aide_envoyer">Sur l\'autre téléphone : ⋮ › Échanger avec un téléphone proche › Recevoir des radios. Son nom apparaît alors ici.</string>
+    <string name="proche_envoi_en_cours">Envoi à %s…</string>
+    <string name="proche_envoi_echoue">%s n\'a pas répondu : « Recevoir des radios » doit y être ouvert.</string>
+    <plurals name="proche_envoyees">
+        <item quantity="one">%1$d radio envoyée à %2$s</item>
+        <item quantity="other">%1$d radios envoyées à %2$s</item>
+    </plurals>
+    <string name="proche_en_attente">En attente, cinq minutes au plus.\n\nCe téléphone s\'appelle « %s » : choisissez-le sur l\'autre téléphone, depuis « Envoyer mes radios ».</string>
+    <string name="proche_reception_echouee">Rien n\'a été reçu.</string>
+    <plurals name="proche_recues">
+        <item quantity="one">%1$s vous envoie %2$d radio</item>
+        <item quantity="other">%1$s vous envoie %2$d radios</item>
+    </plurals>
+    <plurals name="proche_dans_dossiers">
+        <item quantity="one">, dans %d dossier</item>
+        <item quantity="other">, dans %d dossiers</item>
+    </plurals>
+    <string name="proche_ajouter_question">Les ajouter à votre liste ? Rien du vôtre n\'est effacé, rien n\'est ajouté deux fois.</string>
+    <string name="proche_ajouter">Ajouter</string>
+    <string name="proche_refuser">Refuser</string>
+    <plurals name="proche_ajoutees">
+        <item quantity="one">%d radio ajoutée</item>
+        <item quantity="other">%d radios ajoutées</item>
+    </plurals>
 </resources>
