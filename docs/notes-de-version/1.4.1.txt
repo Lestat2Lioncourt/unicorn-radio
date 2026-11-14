@@ -1,0 +1,37 @@
+[FR] Égaliseur, spectre, échange entre téléphones et titres likés
+
+Égaliseur et spectre :
+Égaliseur avec la courbe, des préréglages et vos personnalisations.
+Spectre configurable sous le lecteur, en grand d'un appui.
+Appui long sur le logo de ce qui joue affiche/masque le spectre, ses réglages, l'égaliseur.
+
+Radios :
+Envoyer ses radios à un téléphone proche, en Bluetooth : toutes, ou un dossier.
+Exporter un dossier seul, depuis son appui long.
+Appui long sur la radio en cours : la ranger dans un dossier.
+Un cœur pour aimer le titre qui passe ; la liste des titres aimés dans le menu.
+
+Podcasts :
+Importer et exporter ses abonnements en OPML, avec les autres applications de podcasts.
+Sélectionner plusieurs épisodes de la liste de lecture pour les retirer d'un coup.
+
+Et un clin d'œil : quel n° d'utilisateur êtes-vous ?
+
+[EN] Equalizer, spectrum, phone-to-phone sharing and liked tracks
+
+Equalizer and spectrum:
+Equalizer with its curve, presets and your own settings.
+Configurable spectrum under the player, full screen with a tap.
+Long-press the logo of what is playing to show/hide the spectrum, its settings, the equalizer.
+
+Radios:
+Send your radios to a nearby phone over Bluetooth: all of them, or a folder.
+Export a single folder, from its long-press menu.
+Long-press the station playing: file it in a folder.
+A heart to like the track playing; the list of liked tracks is in the menu.
+
+Podcasts:
+Import and export your subscriptions as OPML, to and from other podcast apps.
+Select several episodes in the playlist to remove them at once.
+
+And a little wink: which user number are you?
