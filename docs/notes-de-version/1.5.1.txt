@@ -1,0 +1,17 @@
+[FR] Mode télé et podcasts instantanés
+
+Mode télé :
+Possibilité d'afficher un lecteur en plein écran avec le spectre
+Il s'ouvre d'un appui sur le spectre, ou depuis l'appui long sur le logo.
+
+Podcasts :
+La liste des derniers épisodes s'affiche dès l'ouverture d'un podcast
+
+[EN] TV mode and instant podcasts
+
+TV mode:
+A full-screen player with the spectrum
+Open it with a tap on the spectrum, or from the long-press on the logo.
+
+Podcasts:
+The latest episodes show up as soon as a podcast opens
