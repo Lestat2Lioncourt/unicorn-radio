@@ -99,6 +99,10 @@
     <string name="chercher_des_podcasts">Chercher des podcasts…</string>
     <string name="podcasts_tapez">Tapez deux lettres du nom d\'un podcast.</string>
     <string name="podcasts_rien">Aucun podcast trouvé.</string>
+    <plurals name="episodes_la_suite">
+        <item quantity="one">%d épisode, la suite arrive…</item>
+        <item quantity="other">%d épisodes, la suite arrive…</item>
+    </plurals>
     <plurals name="podcasts_nombre">
         <item quantity="one">%d podcast</item>
         <item quantity="other">%d podcasts</item>
@@ -323,6 +327,9 @@
     <string name="spectre_masquer">Masquer le spectre</string>
     <string name="spectre_afficher">Afficher le spectre</string>
     <string name="spectre_reglages">Réglages du spectre…</string>
+    <string name="tele_menu">Mode télé</string>
+    <string name="tele_fermer">Fermer le mode télé sur l\'autre écran</string>
+    <string name="tele_sur_l_ecran">Mode télé sur « %s »</string>
 
     <!-- Pour le plaisir : le nombre de téléchargements au premier lancement. -->
     <string name="rang_bienvenue">Bienvenue !</string>

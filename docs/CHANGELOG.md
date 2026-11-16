@@ -3,6 +3,18 @@
 Une entrée par chantier, la plus récente en tête. Le détail de chacun est
 dans `correctifs/`.
 
+## 2026-11-16 — 048 · Les épisodes au fil du flux
+
+Un podcast ouvert montre ses vingt épisodes les plus récents dès qu'ils
+sont lus, puis se complète pendant que le flux arrive : on a la main tout
+de suite. L'analyse du flux est aussi plus légère.
+
+## 2026-11-14 — 047 · Le mode télé
+
+Le spectre en grand devient un mode télé, fait pour être vu de loin :
+logo, nom et titre en gros, l'heure, plein écran en paysage. Sur un
+second écran branché, il s'y affiche et le téléphone reste libre.
+
 ## 2026-11-14 — 046 · L'égaliseur et le spectre
 
 « Égaliseur… » : dix bandes, la courbe de réponse, les préréglages et les

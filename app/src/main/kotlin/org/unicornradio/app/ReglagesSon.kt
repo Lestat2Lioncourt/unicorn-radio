@@ -305,44 +305,4 @@ object ReglagesSon {
             .show()
         if (paysage) elargir(a, fenetre)
     }
-
-    /**
-     * Le spectre en grand, sur fond noir, avec la station et le titre en
-     * bas, l'écran gardé allumé. Un appui ferme, un appui long règle.
-     */
-    fun pleinEcran(a: AppCompatActivity, textes: () -> Pair<String, String?>) {
-        Spectre.charger(a)
-        val fenetre = Dialog(a, android.R.style.Theme_Black_NoTitleBar_Fullscreen)
-        val marge = dp(a, 24)
-        val fond = FrameLayout(a).apply { setBackgroundColor(Color.BLACK) }
-        val vue = VueSpectre(a)
-        fond.addView(vue, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT).apply {
-            setMargins(marge, marge * 2, marge, dp(a, 120))
-        })
-        val nom = TextView(a).apply { setTextColor(Color.WHITE); textSize = 24f; setSingleLine(); ellipsize = android.text.TextUtils.TruncateAt.END }
-        val titre = TextView(a).apply { setTextColor(Color.argb(200, 255, 255, 255)); textSize = 16f; maxLines = 2; ellipsize = android.text.TextUtils.TruncateAt.END }
-        val bas = LinearLayout(a).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(marge, 0, marge, marge)
-            addView(nom); addView(titre)
-        }
-        fond.addView(bas, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM))
-        fond.setOnClickListener { fenetre.dismiss() }
-        fond.setOnLongClickListener { spectre(a) { vue.relancer() }; true }
-        fenetre.setContentView(fond)
-        fenetre.window?.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-        val minuterie = Handler(Looper.getMainLooper())
-        val ecrire = object : Runnable {
-            override fun run() {
-                val (n, t) = textes()
-                nom.text = n
-                titre.text = t ?: ""
-                titre.visibility = if (t.isNullOrBlank()) View.GONE else View.VISIBLE
-                minuterie.postDelayed(this, 1_000)
-            }
-        }
-        fenetre.setOnDismissListener { minuterie.removeCallbacks(ecrire) }
-        ecrire.run()
-        fenetre.show()
-    }
 }

@@ -174,8 +174,8 @@ leur site) qui mène à cette adresse, donné dans le README. À ajouter à
   un peu plus grands pour la distance.
 - **Les touches lecture et pause** de la télécommande marchent déjà,
   par la session de lecture, comme celles du casque.
-- **Un mode télé** : le spectre en plein écran, la station et le titre,
-  comme le mode télé du bureau.
+- **Le mode télé** : fait sur le téléphone le 2026-11-14 (047), la même
+  vue reprise telle quelle sur la box.
 
 **MilkDrop**, après : projectM, la reprise libre de MilkDrop (LGPL),
 demande OpenGL ES 3. Les Mi Box 3 et Mi Box S de première génération
@@ -193,6 +193,11 @@ OpenGL ES 3 est présent.
   « Mes podcasts » (009), la liste de lecture (012), le téléchargement
   (016). Reste, peut-être, le téléchargement d'office des nouveaux
   épisodes des podcasts suivis, mis de côté le 2026-11-14 (plus haut).
+- **« Mes podcasts » plus rapide**, noté le 2026-11-16 : pour le titre du
+  dernier épisode de chaque podcast suivi, l'écran télécharge et analyse
+  tout le flux. Depuis la lecture au fil du flux (048), on pourrait
+  s'arrêter au premier épisode lu, quand le flux va du plus récent au
+  plus ancien. Gardé pour plus tard.
 - **La synchronisation avec l'Unicorn-TV de la maison**, décidée le
   2026-10-26 et décrite dans `format-d-echange.md` : l'application s'apparie
   à un serveur précis par QR code, ou code court tapé à la main ; le serveur

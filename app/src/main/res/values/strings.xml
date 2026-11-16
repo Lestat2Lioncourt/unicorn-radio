@@ -101,6 +101,10 @@
     <string name="chercher_des_podcasts">Search podcasts…</string>
     <string name="podcasts_tapez">Type two letters of a podcast\'s name.</string>
     <string name="podcasts_rien">No podcast found.</string>
+    <plurals name="episodes_la_suite">
+        <item quantity="one">%d episode, more coming…</item>
+        <item quantity="other">%d episodes, more coming…</item>
+    </plurals>
     <plurals name="podcasts_nombre">
         <item quantity="one">%d podcast</item>
         <item quantity="other">%d podcasts</item>
@@ -328,6 +332,9 @@
     <string name="spectre_masquer">Hide the spectrum</string>
     <string name="spectre_afficher">Show the spectrum</string>
     <string name="spectre_reglages">Spectrum settings…</string>
+    <string name="tele_menu">TV mode</string>
+    <string name="tele_fermer">Close TV mode on the other screen</string>
+    <string name="tele_sur_l_ecran">TV mode on “%s”</string>
 
     <!-- Just for fun: the download count at first launch. -->
     <string name="rang_bienvenue">Welcome!</string>

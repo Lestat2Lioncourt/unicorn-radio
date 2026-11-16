@@ -31,7 +31,7 @@ data class Episode(
     val podcast: String,
     /** L'image du podcast. */
     val image: String?,
-    /** Le résumé, en texte nu, pour la recherche dans les épisodes. */
+    /** Le résumé tel que le flux le donne, HTML compris ; ramené à du texte nu pour la recherche seulement. */
     val description: String? = null,
     /** L'image propre à l'épisode, quand le flux en donne une (`itunes:image` de l'élément). */
     val imagePropre: String? = null,
@@ -52,7 +52,7 @@ data class Episode(
         get() = initialesDe(titre)
 
     /** Le titre et le résumé, sans accents ni majuscules, pour le filtre. */
-    val texteDeRecherche: String by lazy { normaliser(titre + " " + (description ?: "")) }
+    val texteDeRecherche: String by lazy { normaliser(titre + " " + (description?.let { texteNu(it) } ?: "")) }
 
     /** De quoi retrouver et afficher l'épisode plus tard : tout sauf le résumé. */
     fun versJson(): JSONObject = JSONObject()
@@ -68,6 +68,12 @@ data class Episode(
         .put("image_propre", imagePropre ?: JSONObject.NULL)
 
     companion object {
+        /** Le HTML d'un résumé ramené à du texte. */
+        private fun texteNu(html: String): String =
+            if ('<' !in html && '&' !in html) html.replace(Regex("\\s+"), " ").trim()
+            else android.text.Html.fromHtml(html, android.text.Html.FROM_HTML_MODE_LEGACY).toString()
+                .replace(Regex("\\s+"), " ").trim()
+
         /** Sans accents ni majuscules : « Été » et « ete » se valent. */
         fun normaliser(texte: String): String =
             java.text.Normalizer.normalize(texte, java.text.Normalizer.Form.NFD)

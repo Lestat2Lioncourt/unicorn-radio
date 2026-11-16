@@ -177,6 +177,9 @@ class MainActivity : AppCompatActivity() {
     private var episodes: List<Episode> = emptyList()
     private var ecoutesDuPodcast: Map<String, Ecoute> = emptyMap()
     private var generationPodcasts = 0
+    /** Chaque ouverture d'un podcast a son numéro ; et tant que le flux arrive, `episodesEnCours`. */
+    private var generationEpisodes = 0
+    private var episodesEnCours = false
     private val lancerPodcasts = Runnable { chercherDesPodcasts() }
     private var barreTenue = false
     /** La liste de lecture ouverte, sous l'onglet Podcasts, à la place de mes podcasts. */
@@ -586,6 +589,7 @@ class MainActivity : AppCompatActivity() {
         getString(R.string.rang_phrase, org.unicornradio.app.miseajour.Rang.ordinal(this, rang))
 
     override fun onDestroy() {
+        ModeTele.fermerLeSecondEcran()
         installation?.fermer()
         installation = null
         recepteurTelechargements?.let { unregisterReceiver(it) }
@@ -2188,26 +2192,54 @@ class MainActivity : AppCompatActivity() {
         exceptions.clear()
         plisDeRecherche.clear()
         episodesFiltre.setText("")
+        val g = ++generationEpisodes
+        episodesEnCours = true
         afficher()
+        // Encore ce podcast-là, ouvert par ce geste-là : un podcast fermé ou rouvert entre-temps ignore l'ancienne lecture.
+        fun actuel() = g == generationEpisodes && podcastOuvert?.flux == podcast.flux
+        var fini = false
+        var montre = false
+        fun montrer(lu: Flux.Lu) {
+            podcastOuvert = lu.podcast
+            episodes = lu.episodes
+            episodesEnCours = !lu.complet
+            if (lu.complet || (onglet == Onglet.PODCASTS && !modeRecherche)) {
+                afficher()
+                // En haut une fois, au premier paquet ; les suivants s'ajoutent sans faire bouger la liste.
+                if (!montre) liste.scrollToPosition(0)
+                montre = true
+            }
+        }
         lifecycleScope.launch {
             try {
-                val lu = withContext(Dispatchers.IO) {
-                    val lu = Flux.lire(podcast.flux, podcast)
-                    try {
-                        ecoutes.synchroniser(podcast.flux, serveur)
-                    } catch (e: Exception) {
-                        Log.w(Fichiers.JOURNAL, "écoutes : pas mises d'accord avec le serveur : ${e.message}")
-                    }
-                    lu
-                }
-                if (podcastOuvert?.flux != podcast.flux) return@launch
-                podcastOuvert = lu.podcast
-                episodes = lu.episodes
+                // Où l'on en est de chaque épisode, gardé sur le téléphone : de quoi marquer les lignes dès le premier paquet.
                 ecoutesDuPodcast = withContext(Dispatchers.IO) { ecoutes.pour(podcast.flux) }
+                val lu = withContext(Dispatchers.IO) {
+                    Flux.lire(podcast.flux, podcast) { partiel -> runOnUiThread { if (!fini && actuel()) montrer(partiel) } }
+                }
+                if (!actuel()) return@launch
+                fini = true
+                montrer(lu)
                 if (lu.sansSon) Toast.makeText(this@MainActivity, R.string.flux_sans_son, Toast.LENGTH_LONG).show()
                 else if (lu.episodes.isEmpty()) Toast.makeText(this@MainActivity, R.string.aucun_episode, Toast.LENGTH_SHORT).show()
-                afficher()
-                liste.scrollToPosition(0)
+                // Le texte de recherche de chaque épisode, préparé en arrière-plan : la première lettre tapée ne fige pas l'écran.
+                launch(Dispatchers.IO) { lu.episodes.forEach { it.texteDeRecherche } }
+                // Apparié, les positions mises d'accord avec le serveur, après l'affichage : les marques suivent.
+                launch {
+                    val accord = withContext(Dispatchers.IO) {
+                        try {
+                            ecoutes.synchroniser(podcast.flux, serveur)
+                            ecoutes.pour(podcast.flux)
+                        } catch (e: Exception) {
+                            Log.w(Fichiers.JOURNAL, "écoutes : pas mises d'accord avec le serveur : ${e.message}")
+                            null
+                        }
+                    }
+                    if (accord != null && actuel() && accord != ecoutesDuPodcast) {
+                        ecoutesDuPodcast = accord
+                        if (onglet == Onglet.PODCASTS && !modeRecherche) montrerLesEpisodes()
+                    }
+                }
                 // Un flux collé à la main, qui a du son et qu'on ne suit pas encore : proposer de le suivre.
                 if (proposerDeSuivre && !lu.sansSon && !maListe.estSuivi(lu.podcast.flux)) {
                     MaterialAlertDialogBuilder(this@MainActivity)
@@ -2218,10 +2250,12 @@ class MainActivity : AppCompatActivity() {
                         .show()
                 }
             } catch (e: Exception) {
-                if (podcastOuvert?.flux != podcast.flux) return@launch
+                if (!actuel()) return@launch
+                fini = true
                 Log.w(Fichiers.JOURNAL, "podcasts : flux ${podcast.flux} : ${e.message}")
                 Toast.makeText(this@MainActivity, getString(R.string.flux_injoignable, e.message), Toast.LENGTH_LONG).show()
-                fermerLePodcast()
+                // Des épisodes déjà montrés restent ; sinon, le podcast se referme comme avant.
+                if (montre) { episodesEnCours = false; afficher() } else fermerLePodcast()
             }
         }
     }
@@ -2275,8 +2309,11 @@ class MainActivity : AppCompatActivity() {
         adaptateur.montrerEpisodes(retenus, ecoutesDuPodcast) { clef ->
             if (enRecherche) clef !in plisDeRecherche else toutDeplie != (clef in exceptions)
         }
-        episodesEtat.visibility = if (retenus.isEmpty() && episodes.isNotEmpty()) View.VISIBLE else View.GONE
-        episodesEtat.text = getString(R.string.aucun_episode)
+        // Pendant que le flux arrive, la ligne le dit ; ensuite, elle ne parle que d'une recherche sans résultat.
+        val enCours = episodesEnCours && episodes.isNotEmpty()
+        episodesEtat.visibility = if (enCours || (retenus.isEmpty() && episodes.isNotEmpty())) View.VISIBLE else View.GONE
+        episodesEtat.text = if (enCours) resources.getQuantityString(R.plurals.episodes_la_suite, episodes.size, episodes.size)
+        else getString(R.string.aucun_episode)
         val desJours = adaptateur.jours.isNotEmpty()
         val replier = desJours && adaptateur.joursReplies == 0
         episodesDeplier.isEnabled = desJours
@@ -2336,6 +2373,8 @@ class MainActivity : AppCompatActivity() {
 
     private fun fermerLePodcast() {
         podcastOuvert = null
+        generationEpisodes++
+        episodesEnCours = false
         episodes = emptyList()
         ecoutesDuPodcast = emptyMap()
         episodesFiltre.setText("")
@@ -2601,24 +2640,27 @@ class MainActivity : AppCompatActivity() {
             },
             getString(R.string.spectre_reglages) to { ReglagesSon.spectre(this) { rafraichirLecture() } },
             getString(R.string.eq_menu) to { ReglagesSon.egaliseur(this) },
+            // Ouvert sur un second écran, le mode télé se ferme d'ici : le téléphone, lui, est resté libre.
+            if (ModeTele.surUnSecondEcran) getString(R.string.tele_fermer) to { ModeTele.fermerLeSecondEcran() }
+            else getString(R.string.tele_menu) to { ouvrirLeSpectreEnGrand() },
         )
         MaterialAlertDialogBuilder(this)
             .setItems(actions.map { it.first }.toTypedArray()) { _, i -> actions[i].second() }
             .show()
     }
 
-    /** Le spectre en grand : la station ou l'épisode, et le titre en cours, relus chaque seconde. */
+    /** Le mode télé : la station ou l'épisode, le titre en cours et le logo, relus chaque seconde. */
     private fun ouvrirLeSpectreEnGrand() {
-        ReglagesSon.pleinEcran(this) {
+        ModeTele.ouvrir(this) {
             val c = controleur
             val element = c?.currentMediaItem
-            if (c == null || element == null) "" to null
+            if (c == null || element == null) ModeTele.Affiche("", null, null)
             else {
                 val fiche = element.mediaMetadata
                 val nom = (fiche.station ?: fiche.title ?: "").toString()
                 val titre = if (element.estUnEpisode) fiche.artist?.toString()
                 else c.mediaMetadata.title?.toString()?.takeIf { it.isNotBlank() && it != nom }
-                nom to titre
+                ModeTele.Affiche(nom, titre, fiche.artworkUri?.takeIf { it != org.unicornradio.app.lecture.LOGO_PAR_DEFAUT })
             }
         }
     }
