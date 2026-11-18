@@ -1753,6 +1753,7 @@ class MainActivity : AppCompatActivity() {
                 id = 0, genre = genre, nom = nom,
                 jours = if (nom == null) emptySet() else reveil.JOURS.take(5).toSet(),
                 son = reveil.dernierSon(this) ?: sonParDefaut(),
+                secours = reveil.dernierSecours(this),
             )
             val finir = { a: org.unicornradio.app.lecture.Reveil.Alarme ->
                 choisirLeSon(a.son) { son ->
@@ -1831,6 +1832,12 @@ class MainActivity : AppCompatActivity() {
             lignes += Ligne(getString(R.string.ligne_son), reveil.sonTexte(a.son), surAppui = {
                 choisirLeSon(a.son, annuler = { reglerLAlarme(id) }) { son -> modifier(a.copy(son = son)) }
             })
+            // La radio de secours n'a de sens qu'avec une station : une sonnerie ne tombe pas.
+            if (a.son is org.unicornradio.app.lecture.Reveil.Son.DeStation) {
+                lignes += Ligne(getString(R.string.ligne_secours), a.secours?.nom ?: getString(R.string.secours_aucune), surAppui = {
+                    choisirLeSecours(a.secours, annuler = { reglerLAlarme(id) }) { station -> modifier(a.copy(secours = station)) }
+                })
+            }
             lignes += Ligne(
                 titre = getString(R.string.ligne_progressif),
                 detail = getString(if (a.progressif) R.string.ligne_progressif_oui else R.string.ligne_progressif_non),
@@ -1930,6 +1937,28 @@ class MainActivity : AppCompatActivity() {
             .setMultiChoiceItems(jours.map { noms[it].replaceFirstChar { c -> c.titlecase() } }.toTypedArray(), coches) { _, i, oui -> coches[i] = oui }
             .setNegativeButton(R.string.annuler) { _, _ -> annuler() }
             .setPositiveButton(R.string.valider) { _, _ -> suite(jours.filterIndexed { i, _ -> coches[i] }.toSet()) }
+            .show()
+    }
+
+    /**
+     * La radio de secours : « Aucune » en tête, la sonnerie du téléphone
+     * prenant alors le relais, puis mes stations ; celle d'avant cochée. Le
+     * choix est retenu pour la prochaine alarme, comme le son.
+     */
+    private fun choisirLeSecours(avant: Station?, annuler: () -> Unit = {}, suite: (Station?) -> Unit) {
+        val stations = toutesMesStations()
+        val noms = listOf(getString(R.string.secours_aucune)) + stations.map { it.nom }
+        var choisi = if (avant == null) 0 else stations.indexOfFirst { it.uuid == avant.uuid }.let { if (it < 0) -1 else it + 1 }
+        MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.secours_titre)
+            .setSingleChoiceItems(noms.toTypedArray(), choisi) { _, i -> choisi = i }
+            .setNegativeButton(R.string.annuler) { _, _ -> annuler() }
+            .setPositiveButton(R.string.valider) { _, _ ->
+                if (choisi < 0) { annuler(); return@setPositiveButton }
+                val station = if (choisi == 0) null else stations[choisi - 1]
+                reveil.noterLeSecours(this, station)
+                suite(station)
+            }
             .show()
     }
 

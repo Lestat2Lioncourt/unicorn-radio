@@ -3,6 +3,22 @@
 Une entrée par chantier, la plus récente en tête. Le détail de chacun est
 dans `correctifs/`.
 
+## 2026-11-18 — 051 · Les stations d'un dossier en boucle
+
+« Suivante » sur la dernière station d'une liste revient à la première,
+« précédente » sur la première va à la dernière. Pas pour les épisodes.
+
+## 2026-11-17 — 050 · La radio de secours, et deux minutes d'avance
+
+Une alarme sur une station peut avoir une radio de secours, lancée si le
+flux ne joue pas ; la sonnerie vient ensuite. La station démarre deux
+minutes avant l'heure, en muet, au lieu d'une.
+
+## 2026-11-17 — 049 · La sonnerie aussi forte que la radio
+
+Une sonnerie du téléphone, choisie ou de secours, est renforcée pendant
+qu'elle sonne : la montée progressive finit au niveau d'une radio.
+
 ## 2026-11-16 — 048 · Les épisodes au fil du flux
 
 Un podcast ouvert montre ses vingt épisodes les plus récents dès qu'ils

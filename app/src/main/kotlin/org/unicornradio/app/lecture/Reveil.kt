@@ -26,7 +26,7 @@ import java.util.Locale
  * Chacun est programmé comme un réveil (`setAlarmClock`), sous son propre
  * numéro : Android l'annonce dans la barre d'état, le déclenche à l'heure
  * même en veille, et permet au service de lecture de démarrer depuis
- * l'arrière-plan. Avec une station, le départ est une minute avant l'heure
+ * l'arrière-plan. Avec une station, le départ est deux minutes avant l'heure
  * dite, en muet, le temps que la publicité du début passe ; avec une
  * sonnerie, à l'heure. `Recepteur` lance le service (`ServiceLecture.sonner`)
  * et programme la fois suivante ; au démarrage du téléphone, après une mise
@@ -42,8 +42,12 @@ object Reveil {
     /** Dans l'intention : le numéro de l'alarme. */
     const val ID = "id"
 
-    /** Avec une station, le départ une minute avant l'heure, en muet : la publicité du début passe sans être entendue. */
-    const val AVANCE_MS = 60_000L
+    /**
+     * Avec une station, le départ deux minutes avant l'heure, en muet : la
+     * publicité du début passe sans être entendue. Un compte à rebours plus
+     * court part tout de suite, et sonne quand même à son heure.
+     */
+    const val AVANCE_MS = 120_000L
 
     enum class Genre { REVEIL, COMPTE }
 
@@ -72,6 +76,8 @@ object Reveil {
         val fin: Long = 0L,
         /** Un réveil : la sonnerie sautée (« Ne pas sonner cette fois »), son heure dite ; 0 sinon. */
         val saute: Long = 0L,
+        /** La radio de secours, quand la station ne joue pas ; sans elle, la sonnerie du téléphone. */
+        val secours: Station? = null,
     )
 
     private fun prefs(ctx: Context) = ctx.getSharedPreferences("reveil", Context.MODE_PRIVATE)
@@ -138,6 +144,16 @@ object Reveil {
 
     fun noterLeSon(ctx: Context, son: Son) {
         prefs(ctx).edit().putString("dernier_son", versJson(son).toString()).apply()
+    }
+
+    /** La dernière radio de secours choisie, proposée à une nouvelle alarme comme le dernier son. */
+    fun dernierSecours(ctx: Context): Station? =
+        prefs(ctx).getString("dernier_secours", null)?.let { try { stationDe(JSONObject(it)) } catch (e: Exception) { null } }
+
+    fun noterLeSecours(ctx: Context, station: Station?) {
+        prefs(ctx).edit().apply {
+            if (station == null) remove("dernier_secours") else putString("dernier_secours", versJson(station).toString())
+        }.apply()
     }
 
     private fun ecrire(ctx: Context, liste: List<Alarme>) {
@@ -272,6 +288,7 @@ object Reveil {
         .put("heure", a.heure).put("minute", a.minute).put("jours", JSONArray(a.jours.sorted()))
         .put("minutes", a.minutes).put("son", versJson(a.son))
         .put("progressif", a.progressif).put("actif", a.actif).put("fin", a.fin).put("saute", a.saute)
+        .put("secours", a.secours?.let { versJson(it) } ?: JSONObject.NULL)
 
     /** L'alarme lue depuis son texte (l'intention du service). */
     fun alarmeDe(texte: String?): Alarme? = texte?.let { try { alarmeDe(JSONObject(it)) } catch (e: Exception) { null } }
@@ -287,6 +304,7 @@ object Reveil {
             minutes = o.optInt("minutes", 20).coerceAtLeast(1), son = son,
             progressif = o.optBoolean("progressif", true), actif = o.optBoolean("actif"), fin = o.optLong("fin"),
             saute = o.optLong("saute"),
+            secours = o.optJSONObject("secours")?.let(::stationDe),
         )
     }
 
@@ -384,7 +402,7 @@ object Reveil {
                 a.nom == null -> supprimer(ctx, id)
                 a.genre == Genre.COMPTE -> garder(ctx, a.copy(actif = false, fin = 0L))
                 a.jours.isEmpty() -> garder(ctx, a.copy(actif = false))
-                // La fois suivante, après l'heure dite (le départ a pu être une minute avant).
+                // La fois suivante, après l'heure dite (le départ a pu être deux minutes avant).
                 else -> programmer(ctx, a, System.currentTimeMillis() + 2 * AVANCE_MS)
             }
             Annonces.rafraichir(ctx)

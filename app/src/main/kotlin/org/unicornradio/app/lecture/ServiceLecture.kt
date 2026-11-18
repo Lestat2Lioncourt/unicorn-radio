@@ -2,6 +2,7 @@ package org.unicornradio.app.lecture
 
 import android.app.PendingIntent
 import android.content.Intent
+import android.media.audiofx.LoudnessEnhancer
 import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
@@ -32,6 +33,7 @@ import org.unicornradio.app.R
 import org.unicornradio.app.annuaire.Annuaire
 import org.unicornradio.app.annuaire.Retrouver
 import org.unicornradio.app.fichier.Fichiers
+import org.unicornradio.app.modele.Station
 import org.unicornradio.app.podcasts.CLEF_DUREE
 import org.unicornradio.app.podcasts.CLEF_FLUX
 import org.unicornradio.app.podcasts.CLEF_GUID
@@ -91,6 +93,7 @@ class ServiceLecture : MediaSessionService() {
         lecteur.addListener(reprise)
         lecteur.addListener(widget)
         lecteur.addListener(finDuReveil)
+        lecteur.addListener(enBoucle)
 
         val ouvrir = PendingIntent.getActivity(
             this, 0, Intent(this, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
@@ -120,6 +123,7 @@ class ServiceLecture : MediaSessionService() {
         Widget.mettreAJour(this, DerniereEcoute.nom(this), null, enLecture = false)
         Reseau.surRetour = null
         Reseau.laisser()
+        relacherLeRenfort()
         session?.run {
             player.release()
             release()
@@ -337,19 +341,56 @@ class ServiceLecture : MediaSessionService() {
     }
 
     /**
-     * L'heure dite, pour une station : elle joue depuis une minute, en muet,
-     * la publicité du début passée ; le son vient. Si elle ne joue pas, la
-     * sonnerie du téléphone, tout de suite.
+     * L'heure dite, pour une station : elle joue depuis deux minutes, en
+     * muet, la publicité du début passée ; le son vient. Si elle ne joue pas,
+     * la radio de secours, si l'alarme en a une et qu'elle n'a pas déjà été
+     * essayée, avec `ATTENTE_SECOURS_MS` pour partir ; sinon, ou si elle ne
+     * part pas, la sonnerie du téléphone.
      */
     private val aLHeureDite = Runnable {
         val p = session?.player ?: return@Runnable
         if (!reveilEnCours) return@Runnable
         if (!p.isPlaying) {
-            Log.w(Fichiers.JOURNAL, "alarme : la station ne joue pas, la sonnerie du téléphone à la place")
-            jouerUneSonnerie(null)
+            if (passerAuSecours()) {
+                main.postDelayed(apresLeSecours, ATTENTE_SECOURS_MS)
+            } else {
+                Log.w(Fichiers.JOURNAL, "alarme : la station ne joue pas, la sonnerie du téléphone à la place")
+                jouerUneSonnerie(null)
+            }
         }
         Log.i(Fichiers.JOURNAL, "alarme : l'heure dite")
         donnerLeSon()
+    }
+
+    /** La radio de secours de l'alarme qui sonne, `null` sans elle ; et si elle a déjà été lancée. */
+    private var secours: Station? = null
+    private var secoursEssaye = false
+
+    /**
+     * La station ne joue pas : la radio de secours prend sa place, au même
+     * volume (muet avant l'heure dite, la montée ensuite). Faux s'il n'y en a
+     * pas, ou si elle a déjà été essayée.
+     */
+    private fun passerAuSecours(): Boolean {
+        val p = session?.player ?: return false
+        val s = secours ?: return false
+        if (secoursEssaye) return false
+        secoursEssaye = true
+        Log.w(Fichiers.JOURNAL, "alarme : la station ne joue pas, la radio de secours « ${s.nom} »")
+        // Avant le changement : le lecteur qui passe à la radio de secours ne doit pas finir le réveil.
+        idQuiSonne = s.uuid
+        p.setMediaItem(s.versElement())
+        p.prepare()
+        p.play()
+        return true
+    }
+
+    /** Après l'heure dite, la radio de secours a eu son temps : si elle ne joue pas, la sonnerie. */
+    private val apresLeSecours = Runnable {
+        val p = session?.player ?: return@Runnable
+        if (!reveilEnCours || idQuiSonne == ID_SONNERIE || p.isPlaying) return@Runnable
+        Log.w(Fichiers.JOURNAL, "alarme : la radio de secours ne joue pas non plus, la sonnerie du téléphone")
+        jouerUneSonnerie(null)
     }
 
     /** Une sonnerie du téléphone en boucle, celle choisie, ou celle du réveil d'Android ; en muet, le son vient ensuite. */
@@ -367,13 +408,46 @@ class ServiceLecture : MediaSessionService() {
         )
         p.repeatMode = Player.REPEAT_MODE_ONE
         p.volume = 0f
+        renforcer()
         p.prepare()
         p.play()
     }
 
+    /** Le renfort de la sonnerie du téléphone, posé sur la session audio du lecteur le temps qu'elle sonne. */
+    private var renfort: LoudnessEnhancer? = null
+
+    /**
+     * Une sonnerie d'Android est enregistrée bien plus bas qu'une radio,
+     * diffusée très compressée : au même volume, elle sonnait moins fort.
+     * Le renfort d'Android la remonte, son limiteur évite la saturation ;
+     * la montée progressive reste la même, elle finit au niveau d'une radio.
+     */
+    private fun renforcer() {
+        if (renfort != null) return
+        val exo = session?.player as? ExoPlayer ?: return
+        renfort = try {
+            LoudnessEnhancer(exo.audioSessionId).apply {
+                setTargetGain(GAIN_SONNERIE_MB)
+                enabled = true
+            }
+        } catch (e: Exception) {
+            Log.w(Fichiers.JOURNAL, "alarme : pas de renfort pour la sonnerie : ${e.message}")
+            null
+        }
+    }
+
+    private fun relacherLeRenfort() {
+        try {
+            renfort?.release()
+        } catch (e: Exception) {
+            // Déjà libéré : rien à faire.
+        }
+        renfort = null
+    }
+
     /**
      * Une alarme sonne, sur le volume du réveil d'Android (elle sonne même
-     * en silencieux). Une station démarre une minute avant l'heure dite, en
+     * en silencieux). Une station démarre deux minutes avant l'heure dite, en
      * muet, le temps que la publicité du début passe ; à l'heure dite, le son
      * vient (`aLHeureDite`), ou la sonnerie du téléphone si rien ne joue. Une
      * sonnerie choisie démarre à l'heure. Arrêt d'office au bout d'une heure
@@ -387,6 +461,10 @@ class ServiceLecture : MediaSessionService() {
         monteeDepuis = 0L
         main.removeCallbacks(monterLeSon)
         main.removeCallbacks(aLHeureDite)
+        main.removeCallbacks(apresLeSecours)
+        val principale = (alarme.son as? Reveil.Son.DeStation)?.station
+        secours = alarme.secours?.takeIf { principale != null && it.uuid != principale.uuid }
+        secoursEssaye = false
         p.setAudioAttributes(AudioAttributes.Builder().setUsage(C.USAGE_ALARM).setContentType(C.AUDIO_CONTENT_TYPE_MUSIC).build(), true)
         when (val son = alarme.son) {
             is Reveil.Son.DeStation -> {
@@ -415,6 +493,9 @@ class ServiceLecture : MediaSessionService() {
         idQuiSonne = null
         main.removeCallbacks(monterLeSon)
         main.removeCallbacks(aLHeureDite)
+        main.removeCallbacks(apresLeSecours)
+        secours = null
+        relacherLeRenfort()
         val p = session?.player ?: return
         p.setAudioAttributes(AudioAttributes.Builder().setUsage(C.USAGE_MEDIA).setContentType(C.AUDIO_CONTENT_TYPE_MUSIC).build(), true)
         p.repeatMode = Player.REPEAT_MODE_OFF
@@ -422,9 +503,45 @@ class ServiceLecture : MediaSessionService() {
         if (p.currentMediaItem?.mediaId == ID_SONNERIE) { p.stop(); p.clearMediaItems() }
     }
 
+    /**
+     * Une liste de stations tourne en boucle : « suivante » sur la dernière
+     * revient à la première, « précédente » sur la première va à la
+     * dernière, ici comme au casque, dans la notification ou le widget. Pas
+     * les épisodes, qui ne recommencent pas une file finie ; pas une station
+     * seule ; et le réveil règle lui-même sa répétition.
+     */
+    private val enBoucle = object : Player.Listener {
+        override fun onEvents(player: Player, events: Player.Events) {
+            if (!events.containsAny(Player.EVENT_TIMELINE_CHANGED, Player.EVENT_MEDIA_ITEM_TRANSITION)) return
+            if (reveilEnCours) return
+            val item = player.currentMediaItem ?: return
+            val voulu = if (!item.estUnEpisode && player.mediaItemCount > 1) Player.REPEAT_MODE_ALL else Player.REPEAT_MODE_OFF
+            if (player.repeatMode != voulu) player.repeatMode = voulu
+        }
+    }
+
     private val finDuReveil = object : Player.Listener {
         override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) {
             if (!playWhenReady) finirLeReveil()
+        }
+
+        /**
+         * Le flux d'une station tombe pendant le réveil : la radio de secours
+         * tout de suite, sans attendre l'heure dite, pour qu'elle passe sa
+         * publicité en muet. Sans elle, ou déjà essayée : avant l'heure dite,
+         * on attend (`aLHeureDite` sonnera) ; après, la sonnerie.
+         */
+        override fun onPlayerError(error: PlaybackException) {
+            if (!reveilEnCours || idQuiSonne == ID_SONNERIE) return
+            main.post {
+                if (!reveilEnCours || idQuiSonne == ID_SONNERIE) return@post
+                if (passerAuSecours()) {
+                    if (monteeDepuis != 0L) main.postDelayed(apresLeSecours, ATTENTE_SECOURS_MS)
+                } else if (monteeDepuis != 0L) {
+                    Log.w(Fichiers.JOURNAL, "alarme : le flux est tombé, la sonnerie du téléphone")
+                    jouerUneSonnerie(null)
+                }
+            }
         }
 
         override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
@@ -662,6 +779,12 @@ private const val ID_SONNERIE = "reveil-sonnerie"
 
 /** La montée du son du réveil, du silence au plein. */
 private const val MONTEE_MS = 60_000L
+
+/** Après l'heure dite, le temps laissé à la radio de secours pour partir avant la sonnerie. */
+private const val ATTENTE_SECOURS_MS = 20_000L
+
+/** Le renfort de la sonnerie, en millièmes de décibel : +10 dB. */
+private const val GAIN_SONNERIE_MB = 1000
 
 /** Le canal de la notification d'attente du réveil, le temps que celle de Media3 vienne. */
 private const val CANAL_REVEIL = "reveil"

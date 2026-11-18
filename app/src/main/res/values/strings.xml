@@ -182,6 +182,9 @@
     <string name="ligne_jours">Days</string>
     <string name="ligne_son">Sound</string>
     <string name="ligne_progressif">Gradual volume</string>
+    <string name="ligne_secours">Backup radio</string>
+    <string name="secours_aucune">None: the phone ringtone</string>
+    <string name="secours_titre">Backup radio if the station does not play</string>
     <string name="ligne_progressif_oui">The sound rises from silence to full in one minute</string>
     <string name="ligne_progressif_non">The sound starts at full alarm volume</string>
     <string name="son_titre">Sound</string>

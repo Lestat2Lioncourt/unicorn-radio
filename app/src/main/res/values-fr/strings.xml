@@ -180,6 +180,9 @@
     <string name="ligne_jours">Jours</string>
     <string name="ligne_son">Son</string>
     <string name="ligne_progressif">Volume progressif</string>
+    <string name="ligne_secours">Radio de secours</string>
+    <string name="secours_aucune">Aucune : la sonnerie du téléphone</string>
+    <string name="secours_titre">Radio de secours si la station ne joue pas</string>
     <string name="ligne_progressif_oui">Le son monte du silence au plein en une minute</string>
     <string name="ligne_progressif_non">Le son part au plein volume du réveil</string>
     <string name="son_titre">Le son</string>

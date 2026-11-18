@@ -20,8 +20,8 @@ android {
         applicationId = "org.unicornradio.app"
         minSdk = 26
         targetSdk = 36
-        versionCode = 71
-        versionName = "1.5.1"
+        versionCode = 74
+        versionName = "1.6.0.2"
     }
 
     signingConfigs {
