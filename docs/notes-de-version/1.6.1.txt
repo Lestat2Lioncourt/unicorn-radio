@@ -1,0 +1,19 @@
+[FR] Radio de secours et réveil plus fort
+
+Réveil :
+Une radio de secours par alarme, si la station ne joue pas.
+La station démarre deux minutes avant l'heure, en silence, pour passer sa pub (1mn précédemment)
+La sonnerie du téléphone monte aussi fort qu'une radio.
+
+Radios :
+Suivante sur la dernière radio d'un dossier revient à la première, et inversement.
+
+[EN] Backup radio and a louder alarm
+
+Alarm:
+A backup radio per alarm, in case the station does not play.
+The station starts two minutes early, silently, to get past its ads (1 min before)
+The phone ringtone now rises as loud as a radio.
+
+Radios:
+Next on the last radio of a folder goes back to the first, and the other way round.
