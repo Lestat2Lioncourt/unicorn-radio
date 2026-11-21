@@ -1,0 +1,25 @@
+[FR] Ecran dédié Réveil, recherche vocale
+
+Réveil :
+À l'heure dite, l'écran s'allume en mode télé avec Écouter, Arrêter, +1 min et +10 min.
++1 min et +10 min coupent le son, la station continue en silence, puis le son remonte.
+Écouter garde la station en écoute normale, au casque seul s'il y en a un.
+Une alarme pendant une écoute ne la remplace plus : à l'heure, la sonnerie du téléphone part, et Arrêter rend l'écoute.
+
+Radios :
+Chercher une station à la voix, avec le micro à côté du champ de recherche.
+Filtrer la recherche par langue.
+Dans « Précédemment », aimer plusieurs titres à la suite, la fenêtre reste ouverte.
+
+[EN] Dedicated alarm screen, voice search
+
+Alarm:
+At the set time, the screen turns on in TV mode with Listen, Stop, +1 min and +10 min.
++1 min and +10 min mute the sound, the station keeps playing silently, then the sound rises again.
+Listen keeps the station playing as usual, on the headset only if there is one.
+An alarm during listening no longer replaces it: at the set time, the phone ringtone goes off, and Stop gives the listening back.
+
+Radios:
+Search for a station by voice, with the microphone next to the search field.
+Filter the search by language.
+In "Previously", like several tracks in a row, the window stays open.
