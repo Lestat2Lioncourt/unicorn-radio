@@ -32,6 +32,9 @@
     <string name="recherche_indice">Nom de la station</string>
     <string name="tous_les_pays">Tous les pays</string>
     <string name="tous_les_styles">Tous les styles</string>
+    <string name="toutes_les_langues">Toutes les langues</string>
+    <string name="dire_le_nom">Dire le nom</string>
+    <string name="pas_de_reconnaissance_vocale">Pas de reconnaissance vocale sur ce téléphone.</string>
     <string name="recherche_tapez">Tapez deux lettres, ou choisissez un pays ou un style.</string>
     <string name="recherche_en_cours">Recherche…</string>
     <string name="recherche_rien">Aucune station trouvée.</string>
@@ -172,6 +175,15 @@
     <string name="annonce_reveil">Prochain réveil : %1$s</string>
     <string name="annonce_reveil_detail">%1$s · %2$s</string>
     <string name="annonce_sauter">Ne pas sonner cette fois</string>
+    <string name="sonnerie_canal">Alarme qui sonne</string>
+    <string name="reveil_ecouter">Écouter</string>
+    <string name="reveil_arreter">Arrêter</string>
+    <string name="reveil_plus_une">+1 min</string>
+    <string name="reveil_plus_dix">+10 min</string>
+    <string name="reveil_reporte">Le réveil sonnera de nouveau à %1$s</string>
+    <string name="plein_ecran_titre">Allumer l\'écran au réveil</string>
+    <string name="plein_ecran_explication">Pour allumer l\'écran quand une alarme sonne, avec Arrêter, +1 min et +10 min, Android doit autoriser Unicorn-Radio à s\'afficher en plein écran. Sans cela, une notification porte les mêmes boutons.</string>
+    <string name="plein_ecran_autoriser">Autoriser…</string>
     <string name="ligne_en_marche">En marche</string>
     <string name="ligne_lance">Lancé</string>
     <string name="ligne_nom">Nom</string>
@@ -263,6 +275,7 @@
         <item quantity="other">%d épisodes retirés de la liste</item>
     </plurals>
     <string name="precedemment_rien">Rien encore : les titres que la station annonce s\'empilent ici au fil de l\'écoute.</string>
+    <string name="precedemment_indice">Touchez un titre pour l\'aimer, ou ne plus l\'aimer.</string>
     <string name="liste_de_lecture">Liste de lecture</string>
     <string name="lire_ensuite">Lire ensuite</string>
     <string name="retirer_de_la_file">Retirer de la file</string>

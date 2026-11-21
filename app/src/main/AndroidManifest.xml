@@ -14,6 +14,8 @@
         android:name="android.permission.SCHEDULE_EXACT_ALARM"
         android:maxSdkVersion="32" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <!-- A l'heure dite, allumer l'ecran sur l'ecran du reveil, par-dessus le verrouillage. -->
+    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
     <!-- Depuis Android 13, la notification de lecture se demande. -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <!-- Lire le QR code d'appariement ; sans camera, l'adresse et le code se tapent. -->
@@ -69,6 +71,19 @@
                 <data android:mimeType="text/x-opml" />
             </intent-filter>
         </activity>
+
+        <!-- L'ecran du reveil, a l'heure dite : allume l'ecran, par-dessus le verrouillage, en paysage comme le mode tele. -->
+        <activity
+            android:name=".EcranReveil"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:launchMode="singleInstance"
+            android:taskAffinity=""
+            android:showWhenLocked="true"
+            android:turnScreenOn="true"
+            android:screenOrientation="sensorLandscape"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden"
+            android:theme="@style/Theme.UnicornRadio.Reveil" />
 
         <!-- L'ecran Serveur : apparier, mettre a jour, se detacher. -->
         <activity

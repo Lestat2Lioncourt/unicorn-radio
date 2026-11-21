@@ -24,6 +24,8 @@ object Annuaire {
 
     class Pays(val code: String, val nom: String, val nombre: Int)
     class Etiquette(val nom: String, val nombre: Int)
+    /** Une langue : son nom dans l'annuaire (en anglais, ce que la recherche attend), et celui à montrer. */
+    class Langue(val nom: String, val affiche: String, val nombre: Int)
     class AnnuaireInjoignable(message: String) : Exception(message)
 
     private const val USER_AGENT = "Unicorn-Radio/${BuildConfig.VERSION_NAME} (https://github.com/Lestat2Lioncourt/unicorn-radio)"
@@ -91,7 +93,7 @@ object Annuaire {
      * La recherche : par nom, pays et étiquette, chacun facultatif, triée par
      * votes, les stations cassées au dernier contrôle exclues.
      */
-    fun chercher(nom: String = "", paysCode: String? = null, etiquette: String? = null, nomExact: Boolean = false): List<Station> {
+    fun chercher(nom: String = "", paysCode: String? = null, etiquette: String? = null, nomExact: Boolean = false, langue: String? = null): List<Station> {
         val params = LinkedHashMap<String, String>()
         if (nom.isNotBlank()) params["name"] = nom.trim()
         if (nom.isNotBlank() && nomExact) params["nameExact"] = "true"
@@ -99,6 +101,10 @@ object Annuaire {
         if (!etiquette.isNullOrBlank()) {
             params["tag"] = etiquette
             params["tagExact"] = "true"
+        }
+        if (!langue.isNullOrBlank()) {
+            params["language"] = langue
+            params["languageExact"] = "true"
         }
         params["hidebroken"] = "true"
         params["order"] = "votes"
@@ -135,6 +141,33 @@ object Annuaire {
             liste += Pays(code, nom, o.optInt("stationcount"))
         }
         return liste.sortedByDescending { it.nombre }
+    }
+
+    /**
+     * Les langues qui ont au moins `minimum` stations et un code ISO 639,
+     * soixante-dix-huit environ. L'annuaire les nomme en anglais
+     * (« french ») : le nom montré vient du code, dans la langue du
+     * téléphone (« français »), sinon le nom anglais, avec une majuscule.
+     * Triées par le nom montré.
+     */
+    fun langues(minimum: Int = 10): List<Langue> {
+        val tableau = JSONArray(demander("/json/languages", mapOf("hidebroken" to "true", "order" to "stationcount", "reverse" to "true")))
+        val ici = java.util.Locale.getDefault()
+        val liste = ArrayList<Langue>()
+        for (i in 0 until tableau.length()) {
+            val o = tableau.optJSONObject(i) ?: continue
+            val nom = o.optString("name").trim()
+            val nombre = o.optInt("stationcount")
+            // Sans code ISO, ce sont des variantes mal saisies (« francaise », « american english ») : écartées.
+            val code = o.optString("iso_639").trim()
+            if (nom.isEmpty() || nombre < minimum || code.length !in 2..3) continue
+            val traduit = java.util.Locale(code).getDisplayLanguage(ici).takeIf { it.isNotBlank() && !it.equals(code, ignoreCase = true) }
+            val affiche = (traduit ?: nom).replaceFirstChar { it.titlecase(ici) }
+            liste += Langue(nom, affiche, nombre)
+        }
+        // Deux noms de l'annuaire peuvent donner la même langue montrée : la plus fournie seule.
+        return liste.groupBy { it.affiche.lowercase(ici) }.values.map { g -> g.maxBy { it.nombre } }
+            .sortedBy { it.affiche.lowercase(ici) }
     }
 
     /** Les étiquettes les plus portées. */

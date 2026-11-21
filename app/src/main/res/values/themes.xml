@@ -3,6 +3,12 @@
     <style name="Theme.UnicornRadio" parent="Theme.Material3.DayNight.NoActionBar">
         <item name="colorPrimary">@color/ic_launcher_background</item>
     </style>
+    <!-- L'écran du réveil : les couleurs de l'application (le spectre, le
+         cercle du logo les lisent), sur fond noir, en plein écran. -->
+    <style name="Theme.UnicornRadio.Reveil">
+        <item name="android:windowBackground">@android:color/black</item>
+        <item name="android:windowFullscreen">true</item>
+    </style>
     <!-- Le bleu du bord du logo, relevé sur l'image : le rond du calque de
          premier plan se fond dedans sur les masques carrés ou arrondis. -->
     <color name="ic_launcher_background">#0735D2</color>

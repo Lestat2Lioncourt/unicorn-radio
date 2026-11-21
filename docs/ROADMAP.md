@@ -193,6 +193,17 @@ OpenGL ES 3 est présent.
   « Mes podcasts » (009), la liste de lecture (012), le téléchargement
   (016). Reste, peut-être, le téléchargement d'office des nouveaux
   épisodes des podcasts suivis, mis de côté le 2026-11-14 (plus haut).
+- **Android Auto**, mis en attente le 2026-11-18 : le service de lecture
+  devient une `MediaLibraryService` qui présente une arborescence
+  (favoris, dossiers, dernières écoutes, recherche à la voix), les logos
+  en `http` passés par l'application, la déclaration au manifeste. En
+  deux paliers : les radios, puis les podcasts. Hors Play Store, Android
+  Auto ne montre l'application que si l'utilisateur active « Sources
+  inconnues » dans ses réglages développeur. À essayer en voiture : pas
+  d'émulateur d'Android Auto sur ce poste.
+- **Choisir sur une carte**, mis en attente le même jour : des stations
+  placées sur une carte, comme le font d'autres applications ; Radio
+  Browser n'a des coordonnées que pour une partie d'entre elles.
 - **« Mes podcasts » plus rapide**, noté le 2026-11-16 : pour le titre du
   dernier épisode de chaque podcast suivi, l'écran télécharge et analyse
   tout le flux. Depuis la lecture au fil du flux (048), on pourrait
@@ -250,3 +261,7 @@ OpenGL ES 3 est présent.
   éteint. Il faudrait le lecteur natif derrière de toute façon.
 - **Le Play Store** : l'installation par APK suffit à qui veut l'application,
   et évite un compte, des frais et une revue.
+- **« Ok Google, mets … sur Unicorn-Radio »**, écarté le 2026-11-18 :
+  Gemini, l'assistant d'aujourd'hui, ne pilote pas une application tierce,
+  l'utilisateur l'a constaté. À la place, le micro du champ de recherche
+  (053).

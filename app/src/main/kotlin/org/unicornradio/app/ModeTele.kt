@@ -107,9 +107,10 @@ object ModeTele {
         }
     }
 
-    private class Vue(val racine: View, val spectre: VueSpectre, val arreter: () -> Unit)
+    internal class Vue(val racine: View, val spectre: VueSpectre, val arreter: () -> Unit)
 
-    private fun construire(ctx: Context, affiche: () -> Affiche, surAppui: () -> Unit): Vue {
+    /** La vue du mode télé ; l'écran du réveil la reprend, ses boutons par-dessus. */
+    internal fun construire(ctx: Context, affiche: () -> Affiche, surAppui: () -> Unit): Vue {
         fun dp(v: Int) = (v * ctx.resources.displayMetrics.density).toInt()
         val marge = dp(32)
         val fond = FrameLayout(ctx).apply { setBackgroundColor(Color.BLACK) }

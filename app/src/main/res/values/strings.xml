@@ -33,6 +33,9 @@
     <string name="recherche_indice">Station name</string>
     <string name="tous_les_pays">All countries</string>
     <string name="tous_les_styles">All styles</string>
+    <string name="toutes_les_langues">All languages</string>
+    <string name="dire_le_nom">Say the name</string>
+    <string name="pas_de_reconnaissance_vocale">No voice recognition on this phone.</string>
     <string name="recherche_tapez">Type two letters, or pick a country or a style.</string>
     <string name="recherche_en_cours">Searching…</string>
     <string name="recherche_rien">No station found.</string>
@@ -174,6 +177,15 @@
     <string name="annonce_reveil">Next alarm: %1$s</string>
     <string name="annonce_reveil_detail">%1$s · %2$s</string>
     <string name="annonce_sauter">Skip this time</string>
+    <string name="sonnerie_canal">Ringing alarm</string>
+    <string name="reveil_ecouter">Listen</string>
+    <string name="reveil_arreter">Stop</string>
+    <string name="reveil_plus_une">+1 min</string>
+    <string name="reveil_plus_dix">+10 min</string>
+    <string name="reveil_reporte">The alarm will ring again at %1$s</string>
+    <string name="plein_ecran_titre">Turn the screen on for alarms</string>
+    <string name="plein_ecran_explication">To turn the screen on when an alarm rings, with Stop, +1 min and +10 min, Android must allow Unicorn-Radio to show full screen. Without it, a notification carries the same buttons.</string>
+    <string name="plein_ecran_autoriser">Allow…</string>
     <string name="ligne_en_marche">On</string>
     <string name="ligne_lance">Running</string>
     <string name="ligne_nom">Name</string>
@@ -265,6 +277,7 @@
         <item quantity="other">%d episodes removed from the playlist</item>
     </plurals>
     <string name="precedemment_rien">Nothing yet: the titles the station announces pile up here while you listen.</string>
+    <string name="precedemment_indice">Tap a title to like it, or to unlike it.</string>
     <string name="liste_de_lecture">Playlist</string>
     <string name="lire_ensuite">Play next</string>
     <string name="retirer_de_la_file">Remove from the queue</string>

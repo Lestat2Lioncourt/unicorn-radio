@@ -56,8 +56,28 @@ class ServiceLecture : MediaSessionService() {
 
     private var session: MediaSession? = null
 
+    companion object {
+        /** L'écran du réveil : « Arrêter ». */
+        const val ACTION_ARRETER = "org.unicornradio.app.REVEIL_ARRETER"
+        /** L'écran du réveil : « +1 min », « +10 min », les minutes dans `MINUTES`. */
+        const val ACTION_REPORTER = "org.unicornradio.app.REVEIL_REPORTER"
+        /** L'écran du réveil refermé (retour) : la station continue, en écoute ordinaire ; une sonnerie s'arrête. */
+        const val ACTION_CONTINUER = "org.unicornradio.app.REVEIL_CONTINUER"
+        const val MINUTES = "minutes"
+
+        /** Le service vivant, pour l'écran du réveil (même processus). */
+        @Volatile
+        var enCours: ServiceLecture? = null
+            private set
+
+        /** Vrai tant que l'écran du réveil doit rester : il se ferme de lui-même ensuite. */
+        val reveilAffiche: Boolean
+            get() = enCours?.ecranVoulu == true
+    }
+
     override fun onCreate() {
         super.onCreate()
+        enCours = this
         // Un user agent nommé, les redirections http vers https acceptées, et
         // douze secondes sans réponse ou sans octet valent un échec : l'essai
         // suivant plutôt qu'une « mise en mémoire » sans fin.
@@ -116,6 +136,10 @@ class ServiceLecture : MediaSessionService() {
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaSession? = session
 
     override fun onDestroy() {
+        enCours = null
+        main.removeCallbacks(sonnerParDessus)
+        arreterLaCloche(reprendre = false)
+        cacherLEcran()
         noterLaPosition()
         main.removeCallbacks(toutesLesDixSecondes)
         Extinction.annuler()
@@ -241,6 +265,11 @@ class ServiceLecture : MediaSessionService() {
     // ---- Les réveils et les comptes à rebours ----
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        when (intent?.action) {
+            ACTION_ARRETER -> arreterLeReveil(continuer = false)
+            ACTION_CONTINUER -> arreterLeReveil(continuer = true)
+            ACTION_REPORTER -> reporter(intent.getIntExtra(MINUTES, 10))
+        }
         if (intent?.action == Reveil.ACTION) {
             val alarme = Reveil.alarmeDe(intent.getStringExtra(Reveil.ALARME))
             passerAuPremierPlan(alarme)
@@ -360,6 +389,7 @@ class ServiceLecture : MediaSessionService() {
         }
         Log.i(Fichiers.JOURNAL, "alarme : l'heure dite")
         donnerLeSon()
+        montrerLEcran()
     }
 
     /** La radio de secours de l'alarme qui sonne, `null` sans elle ; et si elle a déjà été lancée. */
@@ -411,6 +441,8 @@ class ServiceLecture : MediaSessionService() {
         renforcer()
         p.prepare()
         p.play()
+        // La station est tombée l'écran montré : la notification perd « Écouter ».
+        if (ecranVoulu) montrerLEcran()
     }
 
     /** Le renfort de la sonnerie du téléphone, posé sur la session audio du lecteur le temps qu'elle sonne. */
@@ -425,15 +457,17 @@ class ServiceLecture : MediaSessionService() {
     private fun renforcer() {
         if (renfort != null) return
         val exo = session?.player as? ExoPlayer ?: return
-        renfort = try {
-            LoudnessEnhancer(exo.audioSessionId).apply {
-                setTargetGain(GAIN_SONNERIE_MB)
-                enabled = true
-            }
-        } catch (e: Exception) {
-            Log.w(Fichiers.JOURNAL, "alarme : pas de renfort pour la sonnerie : ${e.message}")
-            null
+        renfort = renfortSur(exo.audioSessionId)
+    }
+
+    private fun renfortSur(sessionAudio: Int): LoudnessEnhancer? = try {
+        LoudnessEnhancer(sessionAudio).apply {
+            setTargetGain(GAIN_SONNERIE_MB)
+            enabled = true
         }
+    } catch (e: Exception) {
+        Log.w(Fichiers.JOURNAL, "alarme : pas de renfort pour la sonnerie : ${e.message}")
+        null
     }
 
     private fun relacherLeRenfort() {
@@ -456,6 +490,18 @@ class ServiceLecture : MediaSessionService() {
     private fun sonner(alarme: Reveil.Alarme, heureDite: Long): Boolean {
         val p = session?.player ?: return false
         Log.i(Fichiers.JOURNAL, "alarme « ${alarme.nom ?: "sans nom"} » : ${Reveil.sonTexte(alarme.son)}")
+        // Une autre sonnerie en cours s'efface devant celle-ci ; ce qu'elle avait interrompu reste en pause.
+        main.removeCallbacks(sonnerParDessus)
+        parDessus = null
+        arreterLaCloche(reprendre = false)
+        // Quelque chose s'écoute déjà, hors réveil : on n'y touche pas avant l'heure, puis la sonnerie par-dessus.
+        if (!reveilEnCours && p.currentMediaItem != null && p.playWhenReady && p.playbackState != Player.STATE_IDLE) {
+            Log.i(Fichiers.JOURNAL, "alarme : une écoute en cours, la sonnerie du téléphone à l'heure dite, par-dessus")
+            parDessus = alarme
+            main.postDelayed(sonnerParDessus, (heureDite - System.currentTimeMillis()).coerceIn(0L, 2 * Reveil.AVANCE_MS))
+            return true
+        }
+        alarmeQuiSonne = alarme
         reveilEnCours = true
         progressif = alarme.progressif
         monteeDepuis = 0L
@@ -480,10 +526,255 @@ class ServiceLecture : MediaSessionService() {
             is Reveil.Son.Sonnerie -> {
                 jouerUneSonnerie(son.uri)
                 donnerLeSon()
+                montrerLEcran()
             }
         }
         Extinction.programmer(61)
+        extinctionDuReveil = true
         return true
+    }
+
+    /** L'alarme qui sonne ou vient de sonner : son nom à l'écran, et ce que « +1 min » reprogramme. */
+    private var alarmeQuiSonne: Reveil.Alarme? = null
+
+    /** La minuterie d'une heure posée par le réveil : elle s'en va avec lui. */
+    private var extinctionDuReveil = false
+
+    // ---- La sonnerie par-dessus une écoute ----
+
+    /** L'alarme qui attend son heure pendant une écoute ; `null` sinon. */
+    private var parDessus: Reveil.Alarme? = null
+
+    /** La sonnerie par-dessus, dans un lecteur à elle : celui de l'écoute garde sa file et sa position. */
+    private var cloche: android.media.MediaPlayer? = null
+    private var renfortCloche: LoudnessEnhancer? = null
+
+    /** L'écoute jouait à l'heure dite : elle reprend quand la sonnerie s'arrête. */
+    private var reprendreApres = false
+
+    /**
+     * L'heure dite pendant une écoute : elle se met en pause, la sonnerie du
+     * téléphone part au plein (on est réveillé), l'écran s'allume. On ne la
+     * confond pas avec une station de plus.
+     */
+    private val sonnerParDessus = Runnable {
+        val a = parDessus ?: return@Runnable
+        parDessus = null
+        val p = session?.player ?: return@Runnable
+        reprendreApres = p.currentMediaItem != null && p.playWhenReady && p.playbackState != Player.STATE_IDLE
+        p.pause()
+        val adresse = (a.son as? Reveil.Son.Sonnerie)?.uri?.let { android.net.Uri.parse(it) }
+            ?: android.media.RingtoneManager.getActualDefaultRingtoneUri(this, android.media.RingtoneManager.TYPE_ALARM)
+            ?: android.media.RingtoneManager.getDefaultUri(android.media.RingtoneManager.TYPE_ALARM)
+        try {
+            cloche = android.media.MediaPlayer().apply {
+                setAudioAttributes(
+                    android.media.AudioAttributes.Builder()
+                        .setUsage(android.media.AudioAttributes.USAGE_ALARM)
+                        .setContentType(android.media.AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                        .build(),
+                )
+                setDataSource(this@ServiceLecture, adresse)
+                isLooping = true
+                prepare()
+                start()
+            }
+            renfortCloche = cloche?.audioSessionId?.let(::renfortSur)
+        } catch (e: Exception) {
+            Log.w(Fichiers.JOURNAL, "alarme : sonnerie par-dessus impossible : ${e.message}")
+            cloche?.release()
+            cloche = null
+        }
+        Log.i(Fichiers.JOURNAL, "alarme : l'heure dite, sonnerie par-dessus l'écoute")
+        alarmeQuiSonne = a
+        montrerLEcran()
+        main.postDelayed(finDeLaCloche, DUREE_CLOCHE_MS)
+    }
+
+    /** Personne n'a répondu : la sonnerie s'arrête d'elle-même, l'écoute reprend. */
+    private val finDeLaCloche = Runnable { arreterLaCloche(reprendre = true) }
+
+    private fun arreterLaCloche(reprendre: Boolean) {
+        main.removeCallbacks(finDeLaCloche)
+        val c = cloche ?: return
+        cloche = null
+        try {
+            c.stop()
+        } catch (e: Exception) {
+            // Pas démarrée : rien à arrêter.
+        }
+        c.release()
+        try {
+            renfortCloche?.release()
+        } catch (e: Exception) {
+            // Déjà libéré.
+        }
+        renfortCloche = null
+        cacherLEcran()
+        if (reprendre && reprendreApres) session?.player?.play()
+        reprendreApres = false
+    }
+
+    // ---- L'écran du réveil, à l'heure dite ----
+
+    /** Vrai de l'heure dite à la fin de la sonnerie : l'écran reste, sa notification aussi. */
+    @Volatile
+    private var ecranVoulu = false
+
+    /**
+     * À l'heure dite, pas au départ deux minutes avant : une notification
+     * d'alarme qui allume l'écran, par-dessus le verrouillage, sur l'écran
+     * du réveil (`EcranReveil`). Si Android ne laisse pas l'application
+     * passer en plein écran, ou si le téléphone est en main, elle reste une
+     * notification, avec les mêmes boutons ; un appui ouvre l'application.
+     */
+    private fun montrerLEcran() {
+        ecranVoulu = true
+        val gestionnaire = getSystemService(android.app.NotificationManager::class.java)
+        if (gestionnaire.getNotificationChannel(CANAL_SONNERIE) == null) {
+            gestionnaire.createNotificationChannel(
+                android.app.NotificationChannel(CANAL_SONNERIE, getString(R.string.sonnerie_canal), android.app.NotificationManager.IMPORTANCE_HIGH).apply {
+                    // Le son est celui du lecteur ; la notification n'en ajoute pas.
+                    setSound(null, null)
+                    enableVibration(false)
+                },
+            )
+        }
+        val ecran = PendingIntent.getActivity(
+            this, 6,
+            Intent(this, org.unicornradio.app.EcranReveil::class.java)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_NO_USER_ACTION),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
+        // Un appui sur la notification : l'application, sur ce qui joue.
+        val application = PendingIntent.getActivity(
+            this, 10, Intent(this, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
+        fun commande(code: Int, action: String, minutes: Int = 0) = PendingIntent.getService(
+            this, code, Intent(this, ServiceLecture::class.java).setAction(action).putExtra(MINUTES, minutes),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
+        val a = alarmeQuiSonne
+        val notification = androidx.core.app.NotificationCompat.Builder(this, CANAL_SONNERIE)
+            .setSmallIcon(R.drawable.ic_licorne)
+            .setColor(getColor(R.color.licorne))
+            .setContentTitle(a?.nom ?: getString(R.string.reveil_radio))
+            .setContentText(a?.let { Reveil.sonTexte(it.son) })
+            .setCategory(androidx.core.app.NotificationCompat.CATEGORY_ALARM)
+            .setPriority(androidx.core.app.NotificationCompat.PRIORITY_MAX)
+            .setVisibility(androidx.core.app.NotificationCompat.VISIBILITY_PUBLIC)
+            .setOngoing(true)
+            .setContentIntent(application)
+            .setFullScreenIntent(ecran, true)
+            .apply {
+                // Trois boutons au plus dans une notification : avec une station, « Écouter » prend la place de « +1 min ».
+                if (stationAEcouter) addAction(0, getString(R.string.reveil_ecouter), commande(11, ACTION_CONTINUER))
+                addAction(0, getString(R.string.reveil_arreter), commande(7, ACTION_ARRETER))
+                if (!stationAEcouter) addAction(0, getString(R.string.reveil_plus_une), commande(8, ACTION_REPORTER, 1))
+                addAction(0, getString(R.string.reveil_plus_dix), commande(9, ACTION_REPORTER, 10))
+            }
+            .build()
+        try {
+            gestionnaire.notify(ID_NOTIFICATION_SONNERIE, notification)
+        } catch (e: Exception) {
+            Log.w(Fichiers.JOURNAL, "alarme : notification de l'écran refusée : ${e.message}")
+        }
+    }
+
+    /**
+     * Une station sonne, pas une sonnerie : « Écouter » la garde, en écoute
+     * ordinaire. Le son d'une alarme sort aussi par le haut-parleur, casque
+     * branché ; celui d'une écoute, par le casque seul.
+     */
+    val stationAEcouter: Boolean
+        get() = reveilEnCours && cloche == null && idQuiSonne != ID_SONNERIE
+
+    private fun cacherLEcran() {
+        ecranVoulu = false
+        getSystemService(android.app.NotificationManager::class.java)?.cancel(ID_NOTIFICATION_SONNERIE)
+    }
+
+    /** Ce que montre l'écran du réveil : la station et son titre, ou le nom de l'alarme sur une sonnerie. */
+    fun afficheDuReveil(): org.unicornradio.app.ModeTele.Affiche {
+        val a = alarmeQuiSonne
+        val nomAlarme = a?.nom ?: getString(R.string.reveil_radio)
+        val item = session?.player?.currentMediaItem
+        if (cloche != null || item == null || item.mediaId == ID_SONNERIE) {
+            return org.unicornradio.app.ModeTele.Affiche(nomAlarme, (a?.son as? Reveil.Son.Sonnerie)?.titre, null)
+        }
+        val fiche = item.mediaMetadata
+        val nom = (fiche.station ?: fiche.title)?.toString() ?: nomAlarme
+        return org.unicornradio.app.ModeTele.Affiche(
+            nom, fiche.title?.toString()?.takeIf { it != nom }, fiche.artworkUri?.takeIf { it != LOGO_PAR_DEFAUT },
+        )
+    }
+
+    /**
+     * « Arrêter » : la sonnerie par-dessus s'arrête et l'écoute reprend ; un
+     * réveil se met en pause. Écran refermé (`continuer`) : une station
+     * continue, en écoute ordinaire ; une sonnerie s'arrête.
+     */
+    private fun arreterLeReveil(continuer: Boolean) {
+        Log.i(Fichiers.JOURNAL, "alarme : ${if (continuer) "écran refermé" else "arrêtée"}")
+        if (cloche != null) {
+            arreterLaCloche(reprendre = true)
+        } else if (reveilEnCours) {
+            val p = session?.player
+            if (continuer && idQuiSonne != ID_SONNERIE) finirLeReveil() else p?.pause()
+        }
+        cacherLEcran()
+    }
+
+    /**
+     * « +1 min », « +10 min ».
+     *
+     * Un réveil qui sonne (station, radio de secours ou sonnerie) : rien ne
+     * s'arrête, le son est coupé, l'écran se ferme ; au bout du temps, c'est
+     * de nouveau l'heure dite (`aLHeureDite`) : la montée du son, l'écran.
+     * La station ne redémarre pas, elle n'a pas à se reconnecter. Mettre en
+     * pause pendant ce temps annule tout.
+     *
+     * La sonnerie par-dessus une écoute : elle s'arrête, l'écoute reste en
+     * pause, et la même alarme revient dans tant de minutes, en compte à
+     * rebours sans nom (il paraît dans la liste, on peut l'annuler) : rien
+     * ne jouant alors, avec la station de l'alarme, en avance et en muet.
+     */
+    private fun reporter(minutes: Int) {
+        val a = alarmeQuiSonne
+        val fin = System.currentTimeMillis() + minutes * 60_000L
+        val p = session?.player
+        if (cloche == null && reveilEnCours && p != null) {
+            Log.i(Fichiers.JOURNAL, "alarme : reportée de $minutes min, en muet")
+            main.removeCallbacks(monterLeSon)
+            main.removeCallbacks(aLHeureDite)
+            main.removeCallbacks(apresLeSecours)
+            monteeDepuis = 0L
+            p.volume = 0f
+            cacherLEcran()
+            main.postDelayed(aLHeureDite, minutes * 60_000L)
+            // L'arrêt d'office, une heure après la nouvelle sonnerie.
+            Extinction.programmer(minutes + 61)
+            extinctionDuReveil = true
+            dire(getString(R.string.reveil_reporte, android.text.format.DateFormat.getTimeFormat(this).format(java.util.Date(fin))))
+            return
+        }
+        // La sonnerie par-dessus : elle s'arrête, l'écoute reste en pause, comme le silence d'un réveil ;
+        // le report la trouvera arrêtée, et sonnera avec la station de l'alarme.
+        if (cloche != null) {
+            reprendreApres = false
+            arreterLaCloche(reprendre = false)
+        }
+        arreterLeReveil(continuer = false)
+        if (a == null) return
+        val report = Reveil.Alarme(
+            id = Reveil.nouvelId(this), genre = Reveil.Genre.COMPTE, nom = null, minutes = minutes,
+            son = a.son, progressif = a.progressif, actif = true, fin = fin, secours = a.secours,
+        )
+        Log.i(Fichiers.JOURNAL, "alarme : reportée de $minutes min")
+        if (Reveil.garder(this, report) != null) {
+            dire(getString(R.string.reveil_reporte, android.text.format.DateFormat.getTimeFormat(this).format(java.util.Date(fin))))
+        }
     }
 
     /** La sonnerie finie, par une pause ou une autre écoute : le lecteur redevient ordinaire. */
@@ -496,6 +787,11 @@ class ServiceLecture : MediaSessionService() {
         main.removeCallbacks(apresLeSecours)
         secours = null
         relacherLeRenfort()
+        cacherLEcran()
+        if (extinctionDuReveil) {
+            extinctionDuReveil = false
+            Extinction.annuler()
+        }
         val p = session?.player ?: return
         p.setAudioAttributes(AudioAttributes.Builder().setUsage(C.USAGE_MEDIA).setContentType(C.AUDIO_CONTENT_TYPE_MUSIC).build(), true)
         p.repeatMode = Player.REPEAT_MODE_OFF
@@ -523,6 +819,8 @@ class ServiceLecture : MediaSessionService() {
     private val finDuReveil = object : Player.Listener {
         override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) {
             if (!playWhenReady) finirLeReveil()
+            // Lecture relancée à la main pendant la sonnerie par-dessus : c'est entendu, elle s'arrête.
+            else if (cloche != null) arreterLaCloche(reprendre = false)
         }
 
         /**
@@ -788,3 +1086,11 @@ private const val GAIN_SONNERIE_MB = 1000
 
 /** Le canal de la notification d'attente du réveil, le temps que celle de Media3 vienne. */
 private const val CANAL_REVEIL = "reveil"
+
+/** Le canal de l'alarme qui sonne, celle qui allume l'écran. */
+private const val CANAL_SONNERIE = "sonnerie"
+
+private const val ID_NOTIFICATION_SONNERIE = 2001
+
+/** La sonnerie par-dessus une écoute s'arrête d'elle-même au bout de dix minutes. */
+private const val DUREE_CLOCHE_MS = 10 * 60_000L

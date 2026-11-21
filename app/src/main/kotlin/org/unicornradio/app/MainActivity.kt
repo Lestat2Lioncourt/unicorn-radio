@@ -141,6 +141,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var rechercheNom: EditText
     private lateinit var recherchePays: Spinner
     private lateinit var rechercheStyle: Spinner
+    private lateinit var rechercheLangue: Spinner
+    private lateinit var rechercheMicro: ImageButton
     private lateinit var rechercheEtat: TextView
     private lateinit var onglets: MaterialButtonToggleGroup
     private lateinit var podcastsPanneau: View
@@ -163,6 +165,7 @@ class MainActivity : AppCompatActivity() {
     private var modeRecherche = false
     private var pays: List<Annuaire.Pays>? = null
     private var etiquettes: List<Annuaire.Etiquette>? = null
+    private var langues: List<Annuaire.Langue> = emptyList()
     private var filtresPrets = false
     private var resultats: List<Station> = emptyList()
     private var generation = 0
@@ -255,6 +258,15 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    /** Ce que la reconnaissance vocale d'Android a compris : le premier choix devient le nom cherché. */
+    private val direLeNom = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { r ->
+        val dit = r.data?.getStringArrayListExtra(android.speech.RecognizerIntent.EXTRA_RESULTS)?.firstOrNull()?.trim()
+        if (r.resultCode != RESULT_OK || dit.isNullOrEmpty()) return@registerForActivityResult
+        rechercheNom.setText(dit)
+        rechercheNom.setSelection(dit.length)
+        programmerLaRecherche(0)
+    }
+
     private val choisirUnFichier = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) importer(uri)
     }
@@ -338,6 +350,8 @@ class MainActivity : AppCompatActivity() {
         rechercheNom = findViewById(R.id.rechercheNom)
         recherchePays = findViewById(R.id.recherchePays)
         rechercheStyle = findViewById(R.id.rechercheStyle)
+        rechercheLangue = findViewById(R.id.rechercheLangue)
+        rechercheMicro = findViewById(R.id.rechercheMicro)
         rechercheEtat = findViewById(R.id.rechercheEtat)
         onglets = findViewById(R.id.onglets)
         podcastsPanneau = findViewById(R.id.podcasts)
@@ -442,6 +456,8 @@ class MainActivity : AppCompatActivity() {
         onBackPressedDispatcher.addCallback(this, retour)
 
         rechercheNom.doAfterTextChanged { programmerLaRecherche() }
+        rechercheMicro.setOnClickListener { ecouterLeNom() }
+        TooltipCompat.setTooltipText(rechercheMicro, rechercheMicro.contentDescription)
         val surFiltre = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
                 if (filtresPrets) programmerLaRecherche(0)
@@ -450,6 +466,7 @@ class MainActivity : AppCompatActivity() {
         }
         recherchePays.onItemSelectedListener = surFiltre
         rechercheStyle.onItemSelectedListener = surFiltre
+        rechercheLangue.onItemSelectedListener = surFiltre
 
         onglets.addOnButtonCheckedListener { _, id, coche ->
             if (coche) choisirLOnglet(if (id == R.id.ongletPodcasts) Onglet.PODCASTS else Onglet.RADIO)
@@ -1270,8 +1287,22 @@ class MainActivity : AppCompatActivity() {
                 val (p, e) = withContext(Dispatchers.IO) {
                     Annuaire.pays().sortedBy { it.nom.lowercase(Locale.getDefault()) } to Annuaire.etiquettes()
                 }
+                // Les langues en plus : sans elles, la recherche marche quand même, la liste reste à « Toutes les langues ».
+                val l = withContext(Dispatchers.IO) {
+                    try {
+                        Annuaire.langues()
+                    } catch (ex: Exception) {
+                        Log.w(Fichiers.JOURNAL, "annuaire : langues : ${ex.message}")
+                        emptyList()
+                    }
+                }
                 pays = p
                 etiquettes = e
+                langues = l
+                rechercheLangue.adapter = ArrayAdapter(
+                    this@MainActivity, android.R.layout.simple_spinner_item,
+                    listOf(getString(R.string.toutes_les_langues)) + l.map { it.affiche },
+                ).apply { setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item) }
                 recherchePays.adapter = ArrayAdapter(
                     this@MainActivity, android.R.layout.simple_spinner_item,
                     listOf(getString(R.string.tous_les_pays)) + p.map { it.nom },
@@ -1295,9 +1326,29 @@ class MainActivity : AppCompatActivity() {
 
     private fun etatDeDepart() = getString(R.string.recherche_tapez)
 
+    /**
+     * Le micro : la fenêtre de reconnaissance vocale d'Android, dans la
+     * langue du téléphone. Elle écoute elle-même : l'application ne demande
+     * pas le micro. Sans reconnaissance sur le téléphone, un message.
+     */
+    private fun ecouterLeNom() {
+        val intention = Intent(android.speech.RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
+            .putExtra(android.speech.RecognizerIntent.EXTRA_LANGUAGE_MODEL, android.speech.RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+            .putExtra(android.speech.RecognizerIntent.EXTRA_PROMPT, getString(R.string.dire_le_nom))
+            .putExtra(android.speech.RecognizerIntent.EXTRA_MAX_RESULTS, 1)
+        try {
+            direLeNom.launch(intention)
+        } catch (e: Exception) {
+            Log.w(Fichiers.JOURNAL, "recherche : pas de reconnaissance vocale : ${e.message}")
+            Toast.makeText(this, R.string.pas_de_reconnaissance_vocale, Toast.LENGTH_LONG).show()
+        }
+    }
+
     private fun paysChoisi(): String? = pays?.getOrNull(recherchePays.selectedItemPosition - 1)?.code
 
     private fun styleChoisi(): String? = etiquettes?.getOrNull(rechercheStyle.selectedItemPosition - 1)?.nom
+
+    private fun langueChoisie(): String? = langues.getOrNull(rechercheLangue.selectedItemPosition - 1)?.nom
 
     /** Taper relance au bout de trois cents millisecondes ; un filtre, tout de suite. */
     private fun programmerLaRecherche(delai: Long = 300) {
@@ -1311,8 +1362,9 @@ class MainActivity : AppCompatActivity() {
         val nom = rechercheNom.text.toString().trim()
         val codePays = paysChoisi()
         val style = styleChoisi()
+        val langue = langueChoisie()
         val g = ++generation
-        if (nom.length < 2 && codePays == null && style == null) {
+        if (nom.length < 2 && codePays == null && style == null && langue == null) {
             resultats = emptyList()
             rechercheEtat.text = etatDeDepart()
             afficher()
@@ -1321,7 +1373,7 @@ class MainActivity : AppCompatActivity() {
         rechercheEtat.text = getString(R.string.recherche_en_cours)
         lifecycleScope.launch {
             try {
-                val trouvees = withContext(Dispatchers.IO) { Annuaire.chercher(nom, codePays, style) }
+                val trouvees = withContext(Dispatchers.IO) { Annuaire.chercher(nom, codePays, style, langue = langue) }
                 if (g != generation || !modeRecherche) return@launch
                 resultats = trouvees
                 rechercheEtat.text = if (trouvees.isEmpty()) getString(R.string.recherche_rien)
@@ -1658,6 +1710,7 @@ class MainActivity : AppCompatActivity() {
             return
         }
         val compte = genre == org.unicornradio.app.lecture.Reveil.Genre.COMPTE
+        demanderLePleinEcran()
         fenetreDeLignes(getString(if (compte) R.string.comptes_titre else R.string.reveils_titre), chaqueSeconde = compte, fermer = {}) {
             reveil.alarmes(this, genre).map { a ->
                 Ligne(
@@ -1707,6 +1760,32 @@ class MainActivity : AppCompatActivity() {
         } catch (e: Exception) {
             Log.w(Fichiers.JOURNAL, "réveil : réglage d'Android introuvable : ${e.message}")
         }
+    }
+
+    /**
+     * Depuis Android 14, allumer l'écran à l'heure du réveil se permet. Une
+     * application installée à la main ne l'a pas toujours : on l'explique,
+     * une fois, avec le chemin du réglage. Sans, une notification porte les
+     * mêmes boutons.
+     */
+    private fun demanderLePleinEcran() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE) return
+        if (getSystemService(android.app.NotificationManager::class.java).canUseFullScreenIntent()) return
+        val p = getSharedPreferences("reveil", MODE_PRIVATE)
+        if (p.getBoolean("plein_ecran_demande", false)) return
+        p.edit().putBoolean("plein_ecran_demande", true).apply()
+        MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.plein_ecran_titre)
+            .setMessage(R.string.plein_ecran_explication)
+            .setPositiveButton(R.string.plein_ecran_autoriser) { _, _ ->
+                try {
+                    startActivity(Intent(android.provider.Settings.ACTION_MANAGE_APP_USE_FULL_SCREEN_INTENT, Uri.parse("package:$packageName")))
+                } catch (e: Exception) {
+                    Log.w(Fichiers.JOURNAL, "réveil : réglage du plein écran introuvable : ${e.message}")
+                }
+            }
+            .setNegativeButton(R.string.pas_maintenant, null)
+            .show()
     }
 
     /** Une notification d'alarme programmée touchée : la liste qui va avec, une fois. */
@@ -2751,16 +2830,28 @@ class MainActivity : AppCompatActivity() {
                 } else emptyList()
                 Precedents.reunir(locaux, duServeur).filter { it.titre != enCours }
             }
-            // Un cœur devant les titres aimés ; un appui aime ou n'aime plus.
+            // Un cœur devant les titres aimés ; un appui aime ou n'aime plus, la fenêtre reste : on en aime plusieurs à la suite.
             val heure = SimpleDateFormat("HH:mm", Locale.getDefault())
+            fun ligne(p: Precedents.Titre): String {
+                val coeur = if (TitresAimes.estAime(this@MainActivity, p.titre, uuid)) "♥ " else ""
+                return "${heure.format(Date(p.le))}   $coeur${p.titre}"
+            }
             val boite = MaterialAlertDialogBuilder(this@MainActivity).setTitle(getString(R.string.precedemment, nom))
-            if (tous.isEmpty()) boite.setMessage(R.string.precedemment_rien)
-            else boite.setItems(
-                tous.map {
-                    val coeur = if (TitresAimes.estAime(this@MainActivity, it.titre, uuid)) "♥ " else ""
-                    "${heure.format(Date(it.le))}   $coeur${it.titre}"
-                }.toTypedArray(),
-            ) { _, i -> aimer(tous[i].titre, nom, uuid) }
+            if (tous.isEmpty()) {
+                boite.setMessage(R.string.precedemment_rien)
+            } else {
+                val lignes = tous.map(::ligne).toMutableList()
+                val adaptateur = android.widget.ArrayAdapter(this@MainActivity, android.R.layout.simple_list_item_1, lignes)
+                val liste = android.widget.ListView(this@MainActivity).apply {
+                    adapter = adaptateur
+                    setOnItemClickListener { _, _, i, _ ->
+                        aimer(tous[i].titre, nom, uuid)
+                        lignes[i] = ligne(tous[i])
+                        adaptateur.notifyDataSetChanged()
+                    }
+                }
+                boite.setMessage(R.string.precedemment_indice).setView(liste)
+            }
             boite.setPositiveButton(android.R.string.ok, null).show()
         }
     }

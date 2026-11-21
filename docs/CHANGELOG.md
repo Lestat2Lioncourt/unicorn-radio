@@ -3,6 +3,32 @@
 Une entrée par chantier, la plus récente en tête. Le détail de chacun est
 dans `correctifs/`.
 
+## 2026-11-21 — 055 · Aimer plusieurs titres de « Précédemment »
+
+La fenêtre « Précédemment » reste ouverte quand on touche un titre : le
+cœur apparaît ou disparaît sur la ligne, on en aime plusieurs à la suite.
+Une ligne dit le geste.
+
+## 2026-11-19 — 054 · L'écran du réveil, et la sonnerie par-dessus une écoute
+
+À l'heure dite, l'écran s'allume sur le mode télé avec « Écouter »,
+« Arrêter », « +1 min » et « +10 min ». « +1 min » coupe le son, la
+station continue en muet, puis le son remonte. « Écouter » garde la
+station en écoute ordinaire, au casque seul s'il y en a un. Une alarme
+qui tombe pendant une écoute ne la remplace plus : à l'heure dite,
+l'écoute se met en pause, la sonnerie du téléphone part ; « Arrêter »
+rend l'écoute, un report sonne avec la station de l'alarme.
+
+## 2026-11-18 — 053 · Chercher à la voix
+
+Un micro à droite du champ de recherche des radios : on dit le nom, la
+recherche part.
+
+## 2026-11-18 — 052 · Le filtre par langue
+
+La recherche dans l'annuaire filtre aussi par langue, à côté du pays et
+du style : soixante-dix-huit langues, nommées dans celle du téléphone.
+
 ## 2026-11-18 — 051 · Les stations d'un dossier en boucle
 
 « Suivante » sur la dernière station d'une liste revient à la première,
