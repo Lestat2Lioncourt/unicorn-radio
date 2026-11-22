@@ -1,0 +1,9 @@
+[FR] Les noms de stations en entier
+
+Radios :
+Un nom de station trop long passe sur deux lignes au lieu d'être tronqué
+
+[EN] Full station names
+
+Radios:
+A station name that is too long now wraps onto two lines instead of being truncated
