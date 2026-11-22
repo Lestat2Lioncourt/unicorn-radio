@@ -3,6 +3,11 @@
 Une entrée par chantier, la plus récente en tête. Le détail de chacun est
 dans `correctifs/`.
 
+## 2026-11-22 — 056 · Les noms de stations en entier
+
+Le nom d'une station passe sur deux lignes s'il le faut, au lieu d'être
+coupé : dans la recherche, les favoris et les dossiers.
+
 ## 2026-11-21 — 055 · Aimer plusieurs titres de « Précédemment »
 
 La fenêtre « Précédemment » reste ouverte quand on touche un titre : le

@@ -48,7 +48,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:ellipsize="end"
-            android:singleLine="true"
+            android:maxLines="2"
             android:textAppearance="?attr/textAppearanceBodyLarge" />
 
         <TextView
