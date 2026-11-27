@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Le bouton « à la suite » d'un épisode, quand il n'est pas dans la liste : un rond cerclé. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="oval">
+    <stroke android:width="1.5dp" android:color="?attr/colorOutline" />
+</shape>

@@ -390,12 +390,20 @@ class MainActivity : AppCompatActivity() {
             surEtoilePodcast = { suivre(it) },
             surListe = { ouvrirLaFile() },
             surDate = { basculerLaDate(it) },
-            // En mode sélection, un appui, court ou long, coche ou décoche.
-            surEpisode = { if (selection != null) basculerLaSelection(it) else jouerLEpisode(it) },
+            // En mode sélection, un appui, court ou long, coche ou décoche. Dans la liste de lecture,
+            // l'épisode joue à sa place, et la lecture continue avec ceux qui sont sous lui.
+            surEpisode = {
+                when {
+                    selection != null -> basculerLaSelection(it)
+                    fileOuverte && podcastOuvert == null -> lireLaListeDepuis(it)
+                    else -> jouerLEpisode(it)
+                }
+            },
             surEpisodeLong = { if (selection != null) { basculerLaSelection(it); true } else menuEpisode(it) },
+            estALaSuite = { it.clef in aSuivreClefs },
+            surSuite = { if (it.clef in aSuivreClefs) retirerDeLaListe(it) else lireEnsuite(it) },
             etiquettes = { e ->
                 listOfNotNull(
-                    getString(R.string.a_la_suite).takeIf { e.clef in aSuivreClefs },
                     when (sortsDeTelechargement[e.clef]) {
                         Telechargements.Sort.FINI -> getString(R.string.telecharge)
                         Telechargements.Sort.EN_COURS -> getString(R.string.telechargement_en_cours)
@@ -2502,6 +2510,7 @@ class MainActivity : AppCompatActivity() {
             episodesFiltre.setText("")
         }
         fileOuverte = true
+        enCoursSuivi = null
         if (onglet != Onglet.PODCASTS) {
             onglet = Onglet.PODCASTS
             onglets.check(R.id.ongletPodcasts)
@@ -2517,8 +2526,10 @@ class MainActivity : AppCompatActivity() {
     /** Les passés, atténués, l'épisode en cours, ceux à suivre ; où l'on en est de chacun, flux par flux. */
     private fun montrerLaFile() {
         val enCours = controleur?.currentMediaItem?.takeIf { it.estUnEpisode }?.episode
+        // L'épisode en cours n'est qu'en cours : juste après un changement, le lecteur l'a déjà pris,
+        // mais la liste gardée ne l'a pas encore sorti d'« à suivre » (le service l'écrit à la transition).
         val passes = fileDEcoute.passes().filter { it.clef != enCours?.clef }
-        val suite = fileDEcoute.aSuivre()
+        val suite = fileDEcoute.aSuivre().filter { it.clef != enCours?.clef }
         relireLesMarques()
         val cache = HashMap<String, Map<String, Ecoute>>()
         adaptateur.montrerLaFile(
@@ -2527,6 +2538,30 @@ class MainActivity : AppCompatActivity() {
             titres = Triple(getString(R.string.precedents), getString(R.string.en_cours), getString(R.string.a_suivre)),
             vide = getString(R.string.liste_vide),
         )
+        // L'épisode en cours reste à l'écran : à l'ouverture de la liste, et chaque fois qu'il change.
+        val clef = enCours?.clef
+        if (clef != enCoursSuivi) {
+            val ouverture = enCoursSuivi == null
+            enCoursSuivi = clef
+            if (clef != null) liste.post { garderEnVue(adaptateur.positionDeLEpisode(clef), ouverture) }
+        }
+    }
+
+    /** L'épisode en cours que la liste de lecture a déjà amené à l'écran ; `null` à l'ouverture de la liste. */
+    private var enCoursSuivi: String? = null
+
+    /**
+     * Une ligne hors de l'écran y vient, au plus près : en haut si elle est
+     * au-dessus, en bas si elle est au-dessous ; déjà visible, rien ne bouge.
+     * À l'ouverture d'un coup, ensuite en douceur.
+     */
+    private fun garderEnVue(position: Int, dUnCoup: Boolean) {
+        if (position < 0 || !fileOuverte) return
+        val lm = liste.layoutManager as? LinearLayoutManager ?: return
+        val premiere = lm.findFirstCompletelyVisibleItemPosition()
+        val derniere = lm.findLastCompletelyVisibleItemPosition()
+        if (premiere != RecyclerView.NO_POSITION && position in premiere..derniere) return
+        if (dUnCoup || premiere == RecyclerView.NO_POSITION) lm.scrollToPosition(position) else liste.smoothScrollToPosition(position)
     }
 
     /** « Vider la liste » : tout, l'épisode en cours compris, arrêté d'abord, comme sur le bureau. */
@@ -2579,7 +2614,7 @@ class MainActivity : AppCompatActivity() {
     /** L'appui long sur un épisode : lire, à la suite ou retiré, téléchargé ou son téléchargement supprimé. */
     private fun menuEpisode(episode: Episode): Boolean {
         val actions = ArrayList<Pair<String, () -> Unit>>()
-        actions += getString(R.string.lire) to { jouerLEpisode(episode) }
+        actions += getString(R.string.lire) to { if (fileOuverte && podcastOuvert == null) lireLaListeDepuis(episode) else jouerLEpisode(episode) }
         when {
             fileOuverte && podcastOuvert == null -> {
                 actions += getString(R.string.retirer_de_la_liste) to { retirerDeLaListe(episode) }
@@ -2648,6 +2683,26 @@ class MainActivity : AppCompatActivity() {
      * « précédent » y revienne, ceux à suivre derrière.
      */
     private fun jouerLEpisode(episode: Episode) {
+        val passes = fileDEcoute.passes().filter { it.clef != episode.clef }
+        val suite = fileDEcoute.aSuivre().filter { it.clef != episode.clef }
+        jouerDansLaFile(passes, episode, suite)
+    }
+
+    /**
+     * Un appui dans la liste de lecture : cet
+     * épisode, puis tous ceux qui sont sous lui, dans l'ordre de la liste,
+     * les passés d'après lui compris (ce qu'on a manqué en s'endormant) ;
+     * ceux du dessus restent les précédents.
+     */
+    private fun lireLaListeDepuis(episode: Episode) {
+        val ordre = episodesDeLaFile()
+        val i = ordre.indexOfFirst { it.clef == episode.clef }
+        if (i < 0) return jouerLEpisode(episode)
+        jouerDansLaFile(ordre.subList(0, i), episode, ordre.subList(i + 1, ordre.size))
+    }
+
+    /** L'épisode dans le lecteur, `avant` devant lui, `apres` derrière ; repris où l'on en était s'il n'est pas terminé. */
+    private fun jouerDansLaFile(avant: List<Episode>, episode: Episode, apres: List<Episode>) {
         val c = controleur
         if (c == null) {
             Toast.makeText(this, R.string.lecteur_pas_pret, Toast.LENGTH_SHORT).show()
@@ -2655,9 +2710,7 @@ class MainActivity : AppCompatActivity() {
         }
         val ecoute = ecoutesDuPodcast[episode.guid] ?: ecoutes.pour(episode.flux)[episode.guid]
         val reprise = ecoute?.takeIf { !it.termine && it.position > 0 }?.position ?: 0L
-        val passes = fileDEcoute.passes().filter { it.clef != episode.clef }
-        val suite = fileDEcoute.aSuivre().filter { it.clef != episode.clef }
-        c.setMediaItems((passes + episode + suite).map { elementDe(it) }, passes.size, reprise * 1_000)
+        c.setMediaItems((avant + episode + apres).map { elementDe(it) }, avant.size, reprise * 1_000)
         c.prepare()
         c.play()
     }

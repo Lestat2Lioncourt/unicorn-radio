@@ -78,4 +78,18 @@
             android:textColor="?attr/colorPrimary"
             android:visibility="gone" />
     </LinearLayout>
+
+    <!-- « + » : à la suite dans la liste de lecture ; plein, avec une coche, quand il y est. -->
+    <TextView
+        android:id="@+id/suite"
+        android:layout_width="32dp"
+        android:layout_height="32dp"
+        android:layout_gravity="center_vertical"
+        android:layout_marginStart="8dp"
+        android:background="@drawable/rond_suite"
+        android:clickable="true"
+        android:focusable="true"
+        android:gravity="center"
+        android:textSize="18sp"
+        android:visibility="gone" />
 </LinearLayout>

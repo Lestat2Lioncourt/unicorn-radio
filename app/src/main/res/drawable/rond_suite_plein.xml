@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Le bouton « à la suite » d'un épisode dans la liste de lecture : un rond plein. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="oval">
+    <solid android:color="?attr/colorPrimary" />
+</shape>

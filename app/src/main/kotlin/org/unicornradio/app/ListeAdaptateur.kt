@@ -57,12 +57,17 @@ class ListeAdaptateur(
     private val surDate: (String) -> Unit,
     private val surEpisode: (Episode) -> Unit,
     private val surEpisodeLong: (Episode) -> Boolean,
-    /** Ce qu'une ligne d'épisode dit en plus de sa durée : « À la suite », « Téléchargé ». */
+    /** Ce qu'une ligne d'épisode dit en plus de sa durée : « Téléchargé ». */
     private val etiquettes: (Episode) -> List<String>,
+    /** L'épisode est-il dans la liste de lecture, à suivre ; et le « + » qui l'y met ou l'en retire. */
+    private val estALaSuite: (Episode) -> Boolean,
+    private val surSuite: (Episode) -> Unit,
 ) : RecyclerView.Adapter<ListeAdaptateur.Vue>() {
 
     private var lignes: List<Ligne> = emptyList()
     private var avecEtoiles = false
+    /** Le « + » des épisodes : dans un podcast, pas dans la liste de lecture elle-même. */
+    private var avecSuite = false
     /** Pour mes podcasts : le titre du dernier épisode par flux, `null` quand le flux ne répond pas ; absent, pas encore lu. */
     private var derniers: Map<String, String?> = emptyMap()
 
@@ -122,6 +127,7 @@ class ListeAdaptateur(
         joursReplies = replies
         lignes = l
         avecEtoiles = false
+        avecSuite = true
         notifyDataSetChanged()
     }
 
@@ -149,8 +155,12 @@ class ListeAdaptateur(
         joursReplies = 0
         lignes = l
         avecEtoiles = false
+        avecSuite = false
         notifyDataSetChanged()
     }
+
+    /** La ligne de l'épisode en cours dans la liste de lecture ; -1 s'il n'y est pas. */
+    fun positionDeLEpisode(clef: String) = lignes.indexOfFirst { it is Ligne.Episode && !it.passe && it.episode.clef == clef }
 
     /** Après une étoile : redessiner la ligne de cette station. */
     fun rafraichir(station: Station) {
@@ -175,6 +185,7 @@ class ListeAdaptateur(
         val detail: TextView = v.findViewById(R.id.detail)
         val avancement: ProgressBar? = v.findViewById(R.id.avancement)
         val etat: TextView? = v.findViewById(R.id.etat)
+        val suite: TextView? = v.findViewById(R.id.suite)
     }
 
     override fun getItemViewType(position: Int) = when (lignes[position]) {
@@ -302,6 +313,25 @@ class ListeAdaptateur(
                         if (duree != null && duree > 0) vue.avancement?.progress = (ecoute.position * 1000 / duree).toInt().coerceIn(0, 1000)
                         vue.etat?.visibility = View.VISIBLE
                         vue.etat?.text = c.getString(R.string.reprendre_a, formaterDuree(ecoute.position))
+                    }
+                }
+                vue.suite?.let { b ->
+                    if (!avecSuite || choix != null) {
+                        b.visibility = View.GONE
+                        b.setOnClickListener(null)
+                    } else {
+                        val dedans = estALaSuite(e)
+                        b.visibility = View.VISIBLE
+                        b.text = if (dedans) "✓" else "+"
+                        b.setBackgroundResource(if (dedans) R.drawable.rond_suite_plein else R.drawable.rond_suite)
+                        b.setTextColor(
+                            com.google.android.material.color.MaterialColors.getColor(
+                                b, if (dedans) com.google.android.material.R.attr.colorOnPrimary else com.google.android.material.R.attr.colorOnSurfaceVariant,
+                            ),
+                        )
+                        b.contentDescription = c.getString(if (dedans) R.string.retirer_de_la_file else R.string.lire_ensuite)
+                        androidx.appcompat.widget.TooltipCompat.setTooltipText(b, b.contentDescription)
+                        b.setOnClickListener { surSuite(e) }
                     }
                 }
                 vue.itemView.setOnClickListener { surEpisode(e) }

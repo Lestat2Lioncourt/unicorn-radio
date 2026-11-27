@@ -296,17 +296,16 @@ class ServiceLecture : MediaSessionService() {
                 android.app.NotificationChannel(CANAL_REVEIL, getString(R.string.reveil_radio), android.app.NotificationManager.IMPORTANCE_LOW),
             )
         }
-        // Un appui ouvre l'application ; « Arrêter » met en pause, ce qui finit la sonnerie.
+        // Un appui ouvre l'application ; « Arrêter » arrête le réveil, par le service : une pause
+        // venue des boutons du casque est ignorée pendant le réveil, celle-ci ne doit pas l'être.
         // Cette notification peut rester celle qu'on voit (essai : un appui n'ouvrait rien).
         val ouvrir = PendingIntent.getActivity(
             this, 2, Intent(this, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
-        val arreter = PendingIntent.getBroadcast(
+        val arreter = PendingIntent.getService(
             this, 3,
-            Intent(Intent.ACTION_MEDIA_BUTTON)
-                .setComponent(android.content.ComponentName(this, androidx.media3.session.MediaButtonReceiver::class.java))
-                .putExtra(Intent.EXTRA_KEY_EVENT, android.view.KeyEvent(android.view.KeyEvent.ACTION_DOWN, android.view.KeyEvent.KEYCODE_MEDIA_PAUSE)),
+            Intent(this, ServiceLecture::class.java).setAction(ACTION_ARRETER),
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
         val notification = androidx.core.app.NotificationCompat.Builder(this, CANAL_REVEIL)
@@ -503,6 +502,7 @@ class ServiceLecture : MediaSessionService() {
         }
         alarmeQuiSonne = alarme
         reveilEnCours = true
+        pausesIgnorees = 0
         progressif = alarme.progressif
         monteeDepuis = 0L
         main.removeCallbacks(monterLeSon)
@@ -533,6 +533,16 @@ class ServiceLecture : MediaSessionService() {
         extinctionDuReveil = true
         return true
     }
+
+    /**
+     * Les pauses qu'Android a faites d'elles-mêmes pendant ce réveil, et que
+     * le réveil a défaites. Un casque Bluetooth relié aussi à un ordinateur
+     * qui joue repart vers l'ordinateur quand le téléphone se met à jouer :
+     * Android met alors la lecture en pause (le casque « débranché »), et le
+     * réveil se taisait, haut-parleur compris. Plafonnées, pour ne pas lutter
+     * sans fin contre une pause qui reviendrait toujours.
+     */
+    private var pausesIgnorees = 0
 
     /** L'alarme qui sonne ou vient de sonner : son nom à l'écran, et ce que « +1 min » reprogramme. */
     private var alarmeQuiSonne: Reveil.Alarme? = null
@@ -818,6 +828,15 @@ class ServiceLecture : MediaSessionService() {
 
     private val finDuReveil = object : Player.Listener {
         override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) {
+            // Une pause qui ne vient de personne (casque parti ailleurs, autre application) : le réveil continue.
+            if (!playWhenReady && reveilEnCours && pausesIgnorees < PAUSES_IGNOREES_MAX &&
+                (reason == Player.PLAY_WHEN_READY_CHANGE_REASON_AUDIO_BECOMING_NOISY || reason == Player.PLAY_WHEN_READY_CHANGE_REASON_AUDIO_FOCUS_LOSS)
+            ) {
+                pausesIgnorees++
+                Log.w(Fichiers.JOURNAL, "alarme : pause d'Android ignorée (${if (reason == Player.PLAY_WHEN_READY_CHANGE_REASON_AUDIO_BECOMING_NOISY) "casque débranché ou parti" else "son pris par une autre application"}), le réveil continue")
+                main.post { if (reveilEnCours) session?.player?.play() }
+                return
+            }
             if (!playWhenReady) finirLeReveil()
             // Lecture relancée à la main pendant la sonnerie par-dessus : c'est entendu, elle s'arrête.
             else if (cloche != null) arreterLaCloche(reprendre = false)
@@ -862,6 +881,26 @@ class ServiceLecture : MediaSessionService() {
                 ?: return Futures.immediateFailedFuture(UnsupportedOperationException("rien à reprendre"))
             Log.i(Fichiers.JOURNAL, "reprise de la dernière écoute")
             return Futures.immediateFuture(MediaSession.MediaItemsWithStartPosition(a.elements, a.index, a.positionMs))
+        }
+
+        /**
+         * Pendant le réveil, la pause des boutons du casque est ignorée : un
+         * casque relié à deux appareils l'envoie de lui-même au téléphone quand
+         * l'autre joue. Le réveil s'arrête par l'écran ou la notification.
+         */
+        override fun onMediaButtonEvent(session: MediaSession, controllerInfo: MediaSession.ControllerInfo, intent: Intent): Boolean {
+            if (!reveilEnCours) return false
+            @Suppress("DEPRECATION")
+            val touche = intent.getParcelableExtra<android.view.KeyEvent>(Intent.EXTRA_KEY_EVENT) ?: return false
+            val pause = touche.keyCode in listOf(
+                android.view.KeyEvent.KEYCODE_MEDIA_PAUSE, android.view.KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE,
+                android.view.KeyEvent.KEYCODE_MEDIA_STOP, android.view.KeyEvent.KEYCODE_HEADSETHOOK,
+            )
+            if (!pause) return false
+            if (touche.action == android.view.KeyEvent.ACTION_DOWN) {
+                Log.w(Fichiers.JOURNAL, "alarme : pause du casque ignorée (${android.view.KeyEvent.keyCodeToString(touche.keyCode)}), le réveil continue")
+            }
+            return true
         }
     }
 
@@ -1086,6 +1125,9 @@ private const val GAIN_SONNERIE_MB = 1000
 
 /** Le canal de la notification d'attente du réveil, le temps que celle de Media3 vienne. */
 private const val CANAL_REVEIL = "reveil"
+
+/** Combien de pauses d'Android un réveil défait, au plus. */
+private const val PAUSES_IGNOREES_MAX = 5
 
 /** Le canal de l'alarme qui sonne, celle qui allume l'écran. */
 private const val CANAL_SONNERIE = "sonnerie"

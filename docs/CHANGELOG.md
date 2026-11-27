@@ -3,6 +3,21 @@
 Une entrée par chantier, la plus récente en tête. Le détail de chacun est
 dans `correctifs/`.
 
+## 2026-11-27 — 058 · La liste de lecture lisible, et le lecteur sur deux rangs
+
+Un « + » au bout de chaque épisode, plein quand il est à la suite, comme
+sur le bureau. Dans la liste de lecture, un épisode touché joue à sa
+place, et la suite enchaîne ceux du dessous : de quoi rejouer ce qu'on a
+manqué ; la liste suit l'épisode en cours. Le lecteur sur deux rangs, le cœur et la
+minuterie sous les boutons de lecture, le nom sur deux lignes.
+
+## 2026-11-27 — 057 · Le réveil ne se laisse plus couper par le casque
+
+Un casque Bluetooth relié aussi à un ordinateur qui joue mettait le réveil
+en pause, et on n'entendait rien. Pendant le réveil, les pauses d'Android
+et des boutons du casque sont ignorées : il s'arrête par l'écran ou la
+notification.
+
 ## 2026-11-22 — 056 · Les noms de stations en entier
 
 Le nom d'une station passe sur deux lignes s'il le faut, au lieu d'être
