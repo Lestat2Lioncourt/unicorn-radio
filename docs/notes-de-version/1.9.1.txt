@@ -1,0 +1,27 @@
+[FR] Réveil plus sûr, liste de lecture plus claire
+
+Réveil :
+Correction d'un bug si le casque bluetooth est déjà connecté en lecture sur un autre appareil quand l'alarme se déclenche.
+Pendant le réveil sur volume du téléphone, le bouton pause du casque est ignoré : on l'arrête depuis le téléphone.
+
+Podcasts :
+Un bouton + au bout de chaque épisode le met à la suite ; il se remplit quand l'épisode est dans la liste.
+Dans la liste de lecture, un épisode touché joue à sa place, et la lecture continue avec ceux du dessous.
+La liste de lecture suit l'épisode en cours.
+
+Lecteur :
+Les boutons sur deux rangs, pour laisser la place au nom joué, qui passe sur deux lignes s'il est long.
+
+[EN] Safer alarm, clearer playlist
+
+Alarm:
+Fixed a bug when the Bluetooth headset is already playing from another device as the alarm goes off.
+While the alarm rings on the phone volume, the headset pause button is ignored: stop it from the phone.
+
+Podcasts:
+A + button at the end of each episode plays it next; it fills in when the episode is in the playlist.
+In the playlist, a tapped episode plays in its place, and playback goes on with the ones below.
+The playlist follows the episode playing.
+
+Player:
+The buttons on two rows, to leave room for the name playing, which wraps onto two lines when long.
