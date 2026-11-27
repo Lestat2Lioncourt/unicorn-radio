@@ -105,7 +105,8 @@ dossiers en place.
 
 ---
 
-Dernière publication : 1.8.1, code 87, le 2026-11-22 (essai 1.8.0,
+Dernière publication : 1.9.1, code 93, le 2026-11-27 (essais 1.9.0 à
+1.9.0.4, codes 88 à 92). Avant elle, la 1.8.1, code 87, le 2026-11-22 (essai 1.8.0,
 code 86). Avant elle, la 1.7.1, code 85, le 2026-11-21 (essais 1.7.0 à
 1.7.0.8, codes 76 à 84). Avant elle, la 1.6.1, code 75, le 2026-11-18 (essais 1.6.0 à
 1.6.0.2, codes 72 à 74). Avant elle, la 1.5.1, code 71, le 2026-11-16
